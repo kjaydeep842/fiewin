@@ -18,6 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
         }
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Trust ALL proxies — required for ngrok, Cloudflare, load balancers etc.
+        // Without this, CSRF tokens fail because Laravel sees wrong host/scheme.
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
         ]);
