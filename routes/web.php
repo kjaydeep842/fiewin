@@ -26,16 +26,27 @@ Route::middleware('auth')->group(function () {
 
     // Games
     Route::get('/games', [GameController::class, 'index'])->name('games.index');
-    Route::get('/games/{code}', [GameController::class, 'show'])->name('games.show');
-    Route::get('/games/{code}/state', [GameController::class, 'getGameState'])->name('games.state');
-    Route::post('/games/bet', [GameController::class, 'placeBet'])->name('games.bet');
+
+    // Dedicated Crash Game Routes
+    Route::get('/games/crash/state', [GameController::class, 'getCrashState'])->name('games.crash.state');
+    Route::post('/games/crash/bet', [GameController::class, 'placeCrashBet'])->name('games.crash.bet');
+    Route::post('/games/crash/cashout', [GameController::class, 'cashoutCrash'])->name('games.crash.cashout');
+    Route::get('/games/crash/history', [GameController::class, 'showMyCrashHistory'])->name('games.crash.history');
+
+    // Mines Routes
     Route::post('/games/mines/start', [GameController::class, 'startMines'])->name('games.mines.start');
     Route::post('/games/mines/click', [GameController::class, 'revealMinesTile'])->name('games.mines.click');
     Route::post('/games/mines/cashout', [GameController::class, 'cashoutMines'])->name('games.mines.cashout');
     Route::get('/games/mines/history', [GameController::class, 'getMinesHistory'])->name('games.mines.history');
-    Route::post('/games/crash/cashout', [GameController::class, 'cashoutCrash'])->name('games.crash.cashout');
+
+    // Spin & Dice Routes
     Route::post('/games/spin/settle', [GameController::class, 'settleSpinWheel'])->name('games.spin.settle');
     Route::post('/games/dice/settle', [GameController::class, 'settleDice'])->name('games.dice.settle');
+
+    // Wildcard Parameter Routes (Must be declared last)
+    Route::get('/games/{code}', [GameController::class, 'show'])->name('games.show');
+    Route::get('/games/{code}/state', [GameController::class, 'getGameState'])->name('games.state');
+    Route::post('/games/bet', [GameController::class, 'placeBet'])->name('games.bet');
 
     // Wallet
     Route::get('/wallet', [WalletController::class, 'index'])->name('wallet.index');

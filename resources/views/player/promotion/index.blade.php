@@ -17,14 +17,14 @@
     </div>
 
     <!-- 7-Day Rewards Grid -->
-    <div class="row g-2 text-center mt-2">
+    <div class="row g-1 g-sm-2 text-center mt-2">
         @for($day = 1; $day <= 7; $day++)
             @php $amt = $day * 10; @endphp
             <div class="col" style="flex: 0 0 14.28%; max-width: 14.28%;">
-                <div class="p-2 rounded-3 border {{ ($day <= $checkinHistory->count()) ? 'bg-success bg-opacity-10 border-success text-success' : 'bg-light border-secondary text-secondary' }}">
-                    <div class="fw-bold small mb-1" style="font-size: 0.7rem;">Day {{ $day }}</div>
-                    <div class="fs-4"><i class="bi bi-gift-fill"></i></div>
-                    <div class="fw-bold text-primary" style="font-size: 0.72rem;">₹{{ $amt }}</div>
+                <div class="p-1 p-sm-2 rounded-3 border {{ ($day <= $checkinHistory->count()) ? 'bg-success bg-opacity-10 border-success text-success' : 'bg-light border-secondary text-secondary' }}">
+                    <div class="fw-bold text-truncate mb-1" style="font-size: 0.62rem;">Day {{ $day }}</div>
+                    <div class="fs-5 fs-sm-4"><i class="bi bi-gift-fill"></i></div>
+                    <div class="fw-bold text-primary text-truncate" style="font-size: 0.65rem;">₹{{ $amt }}</div>
                 </div>
             </div>
         @endfor
@@ -59,4 +59,18 @@
         </div>
     @endforeach
 </div>
+
+@push('scripts')
+@if(session('success'))
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.soundManager) window.soundManager.play('reward');
+        if (window.animationManager) {
+            window.animationManager.triggerConfetti(80);
+            window.animationManager.animateCoinsToWallet();
+        }
+    });
+</script>
+@endif
+@endpush
 @endsection

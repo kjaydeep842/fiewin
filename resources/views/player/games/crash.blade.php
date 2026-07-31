@@ -2,351 +2,225 @@
 
 @section('content')
 
-<!-- Page Header -->
-<div class="gh-card p-3 mb-3">
-    <div class="d-flex align-items-center gap-3">
-        <a href="{{ route('home') }}" class="btn btn-sm btn-light border rounded-circle flex-shrink-0">
-            <i class="bi bi-arrow-left"></i>
-        </a>
-        <div>
-            <h6 class="fw-bold mb-0 text-dark">
-                <i class="bi bi-rocket-takeoff-fill text-danger me-1"></i>{{ $game->name }}
-            </h6>
-            <small class="text-muted" style="font-size: 0.72rem;">Watch the multiplier fly! Cash out before it crashes!</small>
+<!-- Page Header & Mode Switcher (White Glassmorphism Card) -->
+<div class="gh-card p-3 mb-3 bg-white border border-light shadow-sm rounded-4">
+    <div class="d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-3">
+            <a href="{{ route('home') }}" class="btn btn-sm btn-light border rounded-circle flex-shrink-0">
+                <i class="bi bi-arrow-left text-dark"></i>
+            </a>
+            <div>
+                <h6 class="fw-bold mb-0 text-dark" id="gameModeTitle">
+                    <i class="bi bi-airplane-engines-fill text-success me-2"></i>Jet Flight Arena
+                </h6>
+                <small class="text-secondary" style="font-size: 0.72rem;">Live Multiplayer Crash Engine</small>
+            </div>
+        </div>
+
+        <!-- Mode Toggle Tabs & History Link -->
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ route('games.crash.history') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
+                <i class="bi bi-journal-text me-1"></i>My Orders
+            </a>
+            <div class="btn-group btn-group-sm p-1 rounded-pill bg-light border" role="group">
+                <button type="button" class="btn btn-sm btn-success rounded-pill px-3 fw-bold" id="btnModeJet" onclick="gameManager.switchMode('jet')">
+                    ✈️ Jet
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold" id="btnModeRocket" onclick="gameManager.switchMode('rocket')">
+                    🚀 Rocket
+                </button>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Rocket Flight Chart & Live Multiplier -->
-<div class="gh-card mb-3 position-relative overflow-hidden" style="min-height: 240px; background: linear-gradient(180deg, #0f172a 0%, #020617 100%); border-radius: 16px;">
-    <div class="position-absolute top-50 start-50 translate-middle text-center" style="z-index: 2;">
-        <h1 id="crashMultiplierText" class="display-2 fw-bold font-monospace text-warning mb-1"
-            style="text-shadow: 0 0 30px rgba(255,214,0,0.6); letter-spacing: -2px;">1.00x</h1>
-        <div id="crashStatusBadge"
-             class="badge bg-success bg-opacity-25 text-success fs-6 px-3 py-2 rounded-pill">
-            <i class="bi bi-rocket-fill me-1"></i>ROCKET READY
-        </div>
-    </div>
-    <canvas id="crashCanvas" class="w-100 d-block" height="220"></canvas>
+<!-- Round History Pill Bar -->
+<div class="d-flex align-items-center gap-2 overflow-x-auto pb-2 mb-3 no-scrollbar" id="historyPillContainer">
+    <span class="badge bg-white text-secondary border shadow-sm flex-shrink-0 py-2 px-3" style="font-size: 0.72rem;">
+        <i class="bi bi-clock-history me-1 text-primary"></i>HISTORY
+    </span>
+    <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success fw-bold px-3 py-1">14.50x</span>
+    <span class="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger fw-bold px-3 py-1">1.12x</span>
+    <span class="badge rounded-pill bg-warning bg-opacity-10 text-warning border border-warning fw-bold px-3 py-1">1.85x</span>
+    <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success fw-bold px-3 py-1">4.82x</span>
+    <span class="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger fw-bold px-3 py-1">1.05x</span>
+    <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success fw-bold px-3 py-1">22.40x</span>
 </div>
 
-<!-- Controls -->
-<div class="gh-card p-3 mb-3">
+<!-- Flight Area (Dark Sky Night Canvas ~40-45% Height) -->
+<div class="card mb-3 position-relative overflow-hidden border-0 shadow-lg" style="height: 310px; background: #0B0F19; border-radius: 24px;">
+    <!-- Live Floating Multiplier Overlay -->
+    <div class="position-absolute top-50 start-50 translate-middle text-center" style="z-index: 5; pointer-events: none;">
+        <h1 id="crashMultiplierText" class="display-1 fw-black font-monospace text-warning mb-1"
+            style="text-shadow: 0 0 35px rgba(245, 158, 11, 0.8); letter-spacing: -3px;">1.00x</h1>
+        <div id="crashStatusBadge" class="badge bg-primary bg-opacity-10 text-primary fs-6 px-4 py-2 rounded-pill border border-primary">
+            BETTING OPEN
+        </div>
+    </div>
+
+    <!-- 60FPS Flight Canvas Renderer -->
+    <canvas id="crashCanvas" class="w-100 d-block" height="310"></canvas>
+</div>
+
+<!-- Game Statistics Card (White Glassmorphism) -->
+<div class="gh-card p-3 mb-3 bg-white border border-light shadow-sm rounded-4">
+    <div class="row g-2 text-center" style="font-size: 0.78rem;">
+        <div class="col-3 border-end">
+            <span class="text-secondary d-block" style="font-size: 0.65rem;">ONLINE PLAYERS</span>
+            <span class="fw-bold text-dark fs-6" id="statOnlinePlayers">1,420</span>
+        </div>
+        <div class="col-3 border-end">
+            <span class="text-secondary d-block" style="font-size: 0.65rem;">HIGHEST TODAY</span>
+            <span class="fw-bold text-success fs-6">84.50x</span>
+        </div>
+        <div class="col-3 border-end">
+            <span class="text-secondary d-block" style="font-size: 0.65rem;">AVG MULTIPLIER</span>
+            <span class="fw-bold text-primary fs-6">3.12x</span>
+        </div>
+        <div class="col-3">
+            <span class="text-secondary d-block" style="font-size: 0.65rem;">TOTAL POOL</span>
+            <span class="fw-bold text-warning fs-6">₹142,500</span>
+        </div>
+    </div>
+</div>
+
+<!-- Bet Panel Card (White Glassmorphism) -->
+<div class="gh-card p-3 mb-3 bg-white border border-light shadow-sm rounded-4">
     <div class="row g-2 mb-3">
         <div class="col-6">
-            <label class="form-label text-secondary small fw-semibold mb-1">BET AMOUNT (₹)</label>
-            <input type="number" id="crashBetAmount"
-                   class="form-control fw-bold"
-                   value="100"
-                   min="{{ $game->min_entry_fee }}"
-                   max="{{ $game->max_entry_fee }}">
+            <label class="form-label text-secondary small fw-bold mb-1">BET AMOUNT (₹)</label>
+            <div class="input-group">
+                <input type="number" id="crashBetAmount"
+                       class="form-control form-control-lg fw-bold text-dark border-secondary border-opacity-25"
+                       value="100"
+                       min="{{ $game->min_entry_fee }}"
+                       max="{{ $game->max_entry_fee }}">
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="btnHalfBet">1/2</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="btnDoubleBet">2X</button>
+            </div>
         </div>
         <div class="col-6">
-            <label class="form-label text-secondary small fw-semibold mb-1">AUTO CASHOUT</label>
+            <label class="form-label text-secondary small fw-bold mb-1">AUTO CASHOUT</label>
             <div class="input-group">
                 <input type="number" id="autoCashoutTarget"
-                       class="form-control fw-bold"
+                       class="form-control form-control-lg fw-bold text-dark border-secondary border-opacity-25"
                        value="2.00" step="0.10" min="1.1">
-                <span class="input-group-text bg-light text-muted small">x</span>
+                <span class="input-group-text bg-light text-secondary fw-bold">x</span>
             </div>
         </div>
     </div>
 
+    <!-- Quick Bet Chips -->
+    <div class="d-flex gap-1 gap-sm-2 mb-3">
+        @foreach([10, 50, 100, 500, 1000] as $preset)
+        <button type="button"
+                class="btn btn-sm btn-outline-primary flex-fill rounded-pill py-1 fw-bold"
+                onclick="document.getElementById('crashBetAmount').value = {{ $preset }}; if(window.soundManager) window.soundManager.play('click');"
+                style="font-size: 0.75rem;">₹{{ $preset }}</button>
+        @endforeach
+    </div>
+
+    <!-- Place Bet / Cash Out Action Buttons -->
     <div class="row g-2">
         <div class="col-6">
-            <button class="btn gh-btn-primary w-100 py-3 fs-6 fw-bold rounded-3" id="betCrashBtn" onclick="placeCrashBet()">
+            <button class="btn gh-btn-primary w-100 py-3 fs-6 fw-bold rounded-4 shadow-sm" id="betCrashBtn">
                 <i class="bi bi-rocket-fill me-1"></i>PLACE BET
             </button>
         </div>
         <div class="col-6">
-            <button class="btn gh-btn-success w-100 py-3 fs-6 fw-bold rounded-3" id="cashoutCrashBtn" onclick="cashoutCrash()" disabled>
+            <button class="btn gh-btn-success w-100 py-3 fs-6 fw-bold rounded-4 shadow-sm" id="cashoutCrashBtn" disabled>
                 <i class="bi bi-cash-stack me-1"></i>CASH OUT
             </button>
         </div>
     </div>
 </div>
 
-<!-- Quick Bet Presets -->
-<div class="gh-card p-3 mb-3">
-    <small class="text-secondary fw-semibold d-block mb-2" style="font-size: 0.72rem;">QUICK BET AMOUNT</small>
-    <div class="d-flex gap-2">
-        @foreach([10, 50, 100, 500, 1000] as $preset)
-        <button type="button"
-                class="btn btn-outline-primary btn-sm flex-fill rounded-pill py-1"
-                onclick="document.getElementById('crashBetAmount').value = {{ $preset }}"
-                style="font-size: 0.78rem;">₹{{ $preset }}</button>
-        @endforeach
+<!-- Live Players Panel (White Glassmorphism) -->
+<div class="gh-card p-3 mb-3 bg-white border border-light shadow-sm rounded-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-bold text-dark mb-0" style="font-size: 0.9rem;">
+            <i class="bi bi-people-fill me-2 text-primary"></i>Live Round Players
+        </h6>
+        <div class="d-flex gap-2">
+            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning">
+                ✈️ Flying: <strong id="statFlyingPlayers">0</strong>
+            </span>
+            <span class="badge bg-success bg-opacity-10 text-success border border-success">
+                💰 Cashed: <strong id="statCashedPlayers">0</strong>
+            </span>
+        </div>
     </div>
-</div>
 
-<!-- My Bet History -->
-<div class="gh-card p-3">
-    <h6 class="fw-bold text-dark mb-3" style="font-size: 0.9rem;">
-        <i class="bi bi-clock-history me-2 text-primary"></i>My Crash History
-    </h6>
     <div class="table-responsive">
         <table class="table table-hover align-middle small text-center mb-0">
             <thead class="table-light">
-                <tr>
-                    <th>Time</th>
+                <tr class="text-secondary">
+                    <th class="text-start">User</th>
                     <th>Bet (₹)</th>
-                    <th>Cashed Out</th>
-                    <th>Payout</th>
-                    <th>Result</th>
+                    <th>Status</th>
+                    <th>Profit</th>
                 </tr>
             </thead>
-            <tbody id="crashHistoryBody">
-                @forelse($myBets as $bet)
-                <tr>
-                    <td class="text-muted">{{ $bet->created_at->format('H:i:s') }}</td>
-                    <td class="fw-bold">₹{{ number_format($bet->bet_amount, 2) }}</td>
-                    <td class="fw-bold text-primary">
-                        {{ isset($bet->bet_details['cashout_multiplier']) ? $bet->bet_details['cashout_multiplier'] . 'x' : '-' }}
-                    </td>
-                    <td class="fw-bold {{ $bet->status === 'won' ? 'text-success' : 'text-danger' }}">
-                        {{ $bet->status === 'won' ? '+₹' . number_format($bet->win_amount, 2) : '₹0.00' }}
-                    </td>
-                    <td>
-                        @if($bet->status === 'won')
-                            <span class="badge bg-success rounded-pill px-2">WON</span>
-                        @elseif($bet->status === 'lost')
-                            <span class="badge bg-danger rounded-pill px-2">CRASHED</span>
-                        @else
-                            <span class="badge bg-warning text-dark rounded-pill px-2">FLYING</span>
-                        @endif
-                    </td>
-                </tr>
-                @empty
-                <tr>
-                    <td colspan="5" class="text-muted py-3">No bets yet. Place your first bet!</td>
-                </tr>
-                @endforelse
+            <tbody id="livePlayersBody">
+                <!-- Dynamically updated by CrashGameManager -->
             </tbody>
         </table>
     </div>
 </div>
 
-<!-- WIN MODAL -->
-<div class="modal fade" id="crashWinModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 340px; margin: auto;">
-        <div class="modal-content rounded-4 border-0 shadow overflow-hidden text-center">
-            <div class="p-3 text-white" style="background: linear-gradient(135deg, #10B981, #059669);">
-                <div class="fs-1 mb-1"><i class="bi bi-rocket-takeoff-fill text-warning"></i></div>
-                <h5 class="fw-bold mb-0">CASHED OUT!</h5>
+<!-- Win Result Modal -->
+<div class="modal fade" id="crashWinModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content text-center p-4 border-0 shadow-lg rounded-4" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #fff;">
+            <div class="fs-1 mb-2">🎉</div>
+            <h4 class="fw-bold mb-1">CASHED OUT!</h4>
+            <div class="display-6 fw-bold font-monospace mb-2" id="crashWinMult">1.50x</div>
+            <div class="bg-white bg-opacity-20 rounded-3 p-2 mb-3">
+                <small class="d-block text-white opacity-75" style="font-size: 0.75rem;">YOU WON</small>
+                <span class="fs-3 fw-bold text-warning" id="crashWinAmount">+₹0.00</span>
             </div>
-            <div class="modal-body p-3">
-                <p class="text-secondary small mb-2">
-                    You cashed out at <span id="crashWinMult" class="fw-bold text-dark">1.00x</span> multiplier!
-                </p>
-                <div class="p-2 bg-light rounded-3 border mb-3">
-                    <small class="text-secondary d-block">TOTAL WINNINGS</small>
-                    <h3 id="crashWinAmount" class="fw-bold text-success mb-0 font-monospace">+₹0.00</h3>
-                </div>
-                <button type="button" class="btn gh-btn-success w-100 py-2 rounded-pill" data-bs-dismiss="modal">
-                    CONTINUE
-                </button>
-            </div>
+            <button type="button" class="btn btn-light fw-bold rounded-pill w-100 text-success" data-bs-dismiss="modal">CONTINUE WATCHING</button>
         </div>
     </div>
 </div>
 
-<!-- LOSS MODAL -->
-<div class="modal fade" id="crashLossModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 340px; margin: auto;">
-        <div class="modal-content rounded-4 border-0 shadow overflow-hidden text-center">
-            <div class="p-3 text-white" style="background: linear-gradient(135deg, #EF4444, #DC2626);">
-                <div class="fs-2 mb-1"><i class="bi bi-x-octagon-fill"></i></div>
-                <h5 class="fw-bold mb-0">ROCKET CRASHED!</h5>
-            </div>
-            <div class="modal-body p-3">
-                <p class="text-secondary small mb-3">
-                    Rocket crashed at <span id="crashLossMult" class="fw-bold text-danger">0.00x</span>.
-                    Cash out faster next time!
-                </p>
-                <button type="button" class="btn btn-outline-danger w-100 py-2 rounded-pill" data-bs-dismiss="modal">
-                    TRY AGAIN
-                </button>
-            </div>
+<!-- Loss Result Modal -->
+<div class="modal fade" id="crashLossModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content text-center p-4 border-0 shadow-lg rounded-4" style="background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%); color: #fff;">
+            <div class="fs-1 mb-2">💥</div>
+            <h4 class="fw-bold mb-1">CRASHED!</h4>
+            <p class="small mb-3 opacity-75">Round crashed at <span id="crashLossMult" class="fw-bold font-monospace">1.00x</span></p>
+            <button type="button" class="btn btn-light fw-bold rounded-pill w-100 text-danger" data-bs-dismiss="modal">NEXT ROUND</button>
         </div>
     </div>
 </div>
 
 @push('scripts')
+<script src="{{ asset('js/crash-engine.js') }}"></script>
+<script src="{{ asset('js/crash-game-manager.js') }}"></script>
 <script>
-    const crashWinModal  = new bootstrap.Modal(document.getElementById('crashWinModal'));
-    const crashLossModal = new bootstrap.Modal(document.getElementById('crashLossModal'));
+    let gameManager;
 
-    let crashMultiplier = 1.00;
-    let crashInterval;
-    let inFlight       = false;
-    let hasBetted      = false;
-    let activeBetId    = null;
-    let crashPoint     = 1.5;
-    let autoCashoutEnabled = false;
-
-    function updateTopWalletBalance(balStr) {
-        document.querySelectorAll('.font-monospace').forEach(el => {
-            if (el.innerText.includes('₹') && !el.id.includes('Win') && !el.id.includes('Loss')) {
-                el.innerText = '₹' + balStr;
+    document.addEventListener('DOMContentLoaded', function() {
+        gameManager = new CrashGameManager({
+            gameId: "{{ $game->id }}",
+            minBet: {{ $game->min_entry_fee }},
+            maxBet: {{ $game->max_entry_fee }},
+            csrfToken: "{{ csrf_token() }}",
+            routes: {
+                state: "{{ route('games.crash.state') }}",
+                bet: "{{ route('games.crash.bet') }}",
+                cashout: "{{ route('games.crash.cashout') }}"
             }
         });
-    }
+    });
 
-    async function placeCrashBet() {
-        if (inFlight) { alert('Wait for the current round to finish.'); return; }
-
-        const betBtn = document.getElementById('betCrashBtn');
-        const amount = parseFloat(document.getElementById('crashBetAmount').value);
-        const minBet = {{ $game->min_entry_fee }};
-        const maxBet = {{ $game->max_entry_fee }};
-
-        if (isNaN(amount) || amount < minBet || amount > maxBet) {
-            alert(`Bet amount must be between ₹${minBet} and ₹${maxBet}`);
-            return;
+    function updateTopWalletBalance(newBal) {
+        const topEl = document.getElementById('topWalletBalance');
+        if (topEl) {
+            topEl.innerText = '₹' + parseFloat(newBal).toFixed(2);
         }
-
-        betBtn.disabled = true;
-        betBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>PLACING...';
-
-        const formData = new FormData();
-        formData.append('game_id', "{{ $game->id }}");
-        formData.append('period_number', 'CRASH_' + Date.now());
-        formData.append('bet_amount', amount);
-        formData.append('bet_type', 'crash_multiplier');
-
-        try {
-            const res  = await fetch("{{ route('games.bet') }}", {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': "{{ csrf_token() }}", 'Accept': 'application/json' },
-                body: formData
-            });
-            const data = await res.json();
-
-            if (!data.success) {
-                alert(data.message || 'Error placing bet');
-                betBtn.disabled = false;
-                betBtn.innerHTML = '<i class="bi bi-rocket-fill me-1"></i>PLACE BET';
-                return;
-            }
-
-            activeBetId = data.bet?.id || null;
-            hasBetted   = true;
-            autoCashoutEnabled = true;
-            updateTopWalletBalance(data.new_balance);
-            startRocketFlight();
-
-        } catch (err) {
-            console.error(err);
-            alert('Failed to place bet. Please try again.');
-            betBtn.disabled = false;
-            betBtn.innerHTML = '<i class="bi bi-rocket-fill me-1"></i>PLACE BET';
-        }
-    }
-
-    function startRocketFlight() {
-        inFlight        = true;
-        crashMultiplier = 1.00;
-        crashPoint      = parseFloat((1.2 + Math.random() * 7.5).toFixed(2));
-
-        const cashoutBtn   = document.getElementById('cashoutCrashBtn');
-        const statusBadge  = document.getElementById('crashStatusBadge');
-        const multText     = document.getElementById('crashMultiplierText');
-
-        cashoutBtn.disabled = false;
-        statusBadge.className = 'badge bg-success bg-opacity-25 text-success fs-6 px-3 py-2 rounded-pill';
-        statusBadge.innerHTML = '<i class="bi bi-rocket-fill me-1"></i>ROCKET IN FLIGHT';
-
-        const canvas = document.getElementById('crashCanvas');
-        const ctx    = canvas.getContext('2d');
-        canvas.width = canvas.offsetWidth;
-        let x = 0;
-
-        crashInterval = setInterval(() => {
-            crashMultiplier = parseFloat((crashMultiplier + 0.04).toFixed(2));
-            x += 3;
-
-            // Draw flight path
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.beginPath();
-            ctx.moveTo(0, canvas.height);
-            ctx.quadraticCurveTo(x / 2, canvas.height - 30, x, canvas.height - (x * 0.75));
-            ctx.strokeStyle = '#22C55E';
-            ctx.lineWidth   = 3;
-            ctx.shadowColor = '#22C55E';
-            ctx.shadowBlur  = 8;
-            ctx.stroke();
-
-            multText.innerText = crashMultiplier.toFixed(2) + 'x';
-
-            // Auto cashout check
-            const autoTarget = parseFloat(document.getElementById('autoCashoutTarget').value);
-            if (hasBetted && autoCashoutEnabled && !isNaN(autoTarget) && crashMultiplier >= autoTarget) {
-                autoCashoutEnabled = false;
-                cashoutCrash();
-                return;
-            }
-
-            // Crash check
-            if (crashMultiplier >= crashPoint) {
-                clearInterval(crashInterval);
-                inFlight = false;
-
-                statusBadge.className = 'badge bg-danger bg-opacity-25 text-danger fs-6 px-3 py-2 rounded-pill';
-                statusBadge.innerHTML = '<i class="bi bi-x-circle-fill me-1"></i>CRASHED @ ' + crashMultiplier.toFixed(2) + 'x';
-                cashoutBtn.disabled = true;
-
-                const betBtn = document.getElementById('betCrashBtn');
-                betBtn.disabled = false;
-                betBtn.innerHTML = '<i class="bi bi-rocket-fill me-1"></i>PLACE BET';
-
-                if (hasBetted) {
-                    hasBetted = false;
-                    document.getElementById('crashLossMult').innerText = crashMultiplier.toFixed(2) + 'x';
-                    crashLossModal.show();
-                }
-            }
-        }, 100);
-    }
-
-    async function cashoutCrash() {
-        if (!inFlight || !hasBetted) return;
-
-        clearInterval(crashInterval);
-        inFlight = false;
-        hasBetted = false;
-        autoCashoutEnabled = false;
-
-        const cashoutBtn  = document.getElementById('cashoutCrashBtn');
-        const betBtn      = document.getElementById('betCrashBtn');
-        cashoutBtn.disabled = true;
-
-        const formData = new FormData();
-        formData.append('bet_id',    activeBetId);
-        formData.append('multiplier', crashMultiplier.toFixed(2));
-
-        try {
-            const res  = await fetch("{{ route('games.crash.cashout') }}", {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': "{{ csrf_token() }}", 'Accept': 'application/json' },
-                body: formData
-            });
-            const data = await res.json();
-
-            if (data.success) {
-                updateTopWalletBalance(data.new_balance);
-                document.getElementById('crashWinMult').innerText   = crashMultiplier.toFixed(2) + 'x';
-                document.getElementById('crashWinAmount').innerText = '+₹' + data.win_amount;
-                crashWinModal.show();
-            } else {
-                alert(data.message || 'Cashout failed');
-            }
-        } catch (err) {
-            console.error(err);
-            alert('Cashout request failed. Please try again.');
-        }
-
-        betBtn.disabled = false;
-        betBtn.innerHTML = '<i class="bi bi-rocket-fill me-1"></i>PLACE BET';
     }
 </script>
 @endpush

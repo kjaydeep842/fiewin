@@ -41,6 +41,12 @@
 
     .mine-tile {
         transition: all 0.2s ease;
+        aspect-ratio: 1 / 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 !important;
+        width: 100%;
     }
 
     .mine-tile:not(:disabled):hover {
@@ -304,6 +310,8 @@ class MinesGameEngine {
         this.unlockControls();
         this.startBtn.disabled = false;
         this.cashoutBtn.disabled = true;
+        this.cashoutBtn.classList.remove('gh-glow-success');
+        if (this.gridContainer) this.gridContainer.classList.remove('gh-red-alert-pulse');
 
         this.updateHeaderDisplay(1.00, 0.00);
         this.renderBoard();
@@ -381,6 +389,7 @@ class MinesGameEngine {
             // Re-render fresh board cleanly
             this.renderBoard();
             this.cashoutBtn.disabled = false;
+            this.cashoutBtn.classList.add('gh-glow-success');
             this.updateHeaderDisplay(1.00, 0.00);
 
         } catch (err) {
@@ -428,12 +437,17 @@ class MinesGameEngine {
                 buttonEl.className = 'btn mine-tile mine-explode w-100 py-3 rounded-3 fs-4';
                 buttonEl.innerHTML = '<i class="bi bi-bomb-fill"></i>';
 
+                if (window.soundManager) window.soundManager.play('explosion');
+                if (window.animationManager) window.animationManager.shakeScreen();
+
                 this.gameOver(data);
 
             } else if (data.is_gem) {
                 // REVEAL SAFE GEM -> Diamond Glow Animation
                 buttonEl.className = 'btn mine-tile gem-glow w-100 py-3 rounded-3 fs-4';
                 buttonEl.innerHTML = '<i class="bi bi-gem"></i>';
+
+                if (window.soundManager) window.soundManager.play('crystal');
 
                 this.currentMultiplier = parseFloat(data.multiplier);
                 this.currentProfit = parseFloat(data.current_profit);
@@ -450,6 +464,11 @@ class MinesGameEngine {
                     document.getElementById('minesWinMult').innerText = data.multiplier + 'x';
                     document.getElementById('minesWinAmount').innerText = '+₹' + data.win_amount;
                     this.winModal.show();
+                    if (window.soundManager) window.soundManager.play('win');
+                    if (window.animationManager) {
+                        window.animationManager.triggerConfetti(60);
+                        window.animationManager.animateCoinsToWallet(buttonEl);
+                    }
                 }
             }
         } catch (err) {
@@ -505,6 +524,11 @@ class MinesGameEngine {
             document.getElementById('minesWinMult').innerText = data.multiplier + 'x';
             document.getElementById('minesWinAmount').innerText = '+₹' + data.win_amount;
             this.winModal.show();
+            if (window.soundManager) window.soundManager.play('cashout');
+            if (window.animationManager) {
+                window.animationManager.triggerConfetti(60);
+                window.animationManager.animateCoinsToWallet(this.cashoutBtn);
+            }
             this.fetchHistory();
 
         } catch (err) {

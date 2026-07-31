@@ -12,7 +12,7 @@
 </div>
 
 <!-- Top Game Header -->
-<div class="gh-card p-3 mb-3">
+<div id="timerBoxContainer" class="gh-card p-3 mb-3">
     <div class="d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center gap-2">
             <a href="{{ route('home') }}" class="btn btn-sm btn-light border rounded-circle"><i class="bi bi-arrow-left"></i></a>
@@ -22,9 +22,17 @@
             </div>
         </div>
         <div class="text-end">
-            <small class="text-secondary d-block" style="font-size: 0.65rem;">COUNTDOWN</small>
+            <small class="text-secondary d-block fw-semibold" style="font-size: 0.65rem;">COUNTDOWN</small>
             <div id="countdownTimer" class="fs-4 fw-bold text-danger font-monospace">00:30</div>
         </div>
+    </div>
+</div>
+
+<!-- Last 5 Seconds Red Alert Ticker Banner -->
+<div id="lastSecondsAlertBanner" class="gh-card p-2 mb-3 text-center d-none gh-red-alert-pulse" style="border: 2px solid #EF4444; background: rgba(239, 68, 68, 0.15);">
+    <div class="d-flex align-items-center justify-content-center gap-2 text-danger fw-bold fs-6">
+        <i class="bi bi-exclamation-triangle-fill fs-5 gh-timer-pulse"></i>
+        <span>🚨 LAST 5 SECONDS! BETTING CLOSED 🚨</span>
     </div>
 </div>
 
@@ -295,6 +303,10 @@
     }
 
     function selectBet(type) {
+        if (secondsLeft <= 5) {
+            alert('⚠️ Betting is closed for the last 5 seconds of this period. Please wait for the next period!');
+            return;
+        }
         document.getElementById('inputBetType').value = type;
         document.getElementById('inputPeriodNumber').value = currentPeriodNumber;
         document.getElementById('modalBetTypeTitle').innerText = 'Place Bet on ' + type.toUpperCase();
@@ -525,7 +537,111 @@
         let secs = secondsLeft % 60;
         let minStr = mins < 10 ? '0' + mins : mins;
         let secStr = secs < 10 ? '0' + secs : secs;
-        document.getElementById('countdownTimer').innerText = minStr + ':' + secStr;
+        
+        const timerEl = document.getElementById('countdownTimer');
+        const timerBox = document.getElementById('timerBoxContainer');
+        const alertBanner = document.getElementById('lastSecondsAlertBanner');
+        const betBtns = document.querySelectorAll('button[onclick^="selectBet"]');
+
+        timerEl.className = 'font-monospace d-inline-block transition-all';
+
+        if (secondsLeft === 0) {
+            // REACHED 0: CALCULATING RESULT
+            timerEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>CALCULATING...';
+            timerEl.className = 'font-monospace text-warning fs-6 fw-bold';
+            if (timerBox) timerBox.className = 'gh-card p-3 mb-3 border-warning bg-warning bg-opacity-10';
+            if (alertBanner) alertBanner.classList.add('d-none');
+            return;
+        }
+
+        if (secondsLeft <= 5 && secondsLeft > 0) {
+            // STAGE 3: LAST 5 SECONDS (CRITICAL RED ALERT & VIBRATE & FAST TICK)
+            timerEl.innerText = minStr + ':' + secStr;
+            timerEl.classList.add('timer-critical-5s');
+            if (timerBox) timerBox.className = 'gh-card p-3 mb-3 gh-red-alert-pulse';
+            if (alertBanner) alertBanner.classList.remove('d-none');
+
+            // Disable bet buttons
+            betBtns.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('opacity-50');
+            });
+
+            // Auto close modal if open
+            const modalEl = document.getElementById('betModal');
+            if (modalEl && modalEl.classList.contains('show')) {
+                betModal.hide();
+            }
+
+            if (window.soundManager) window.soundManager.play('fastTick');
+            if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+
+        } else if (secondsLeft <= 10 && secondsLeft > 5) {
+            // STAGE 2: LAST 10 SECONDS (RED HEARTBEAT & WARNING TICK)
+            timerEl.innerText = minStr + ':' + secStr;
+            timerEl.classList.add('timer-warning-10s');
+            if (timerBox) timerBox.className = 'gh-card p-3 mb-3 border-danger shadow-sm';
+            if (alertBanner) alertBanner.classList.add('d-none');
+
+            betBtns.forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50');
+            });
+
+            if (window.soundManager) window.soundManager.play('tick');
+
+        } else {
+            // STAGE 1: NORMAL TIME (>10s GREEN PULSE)
+            timerEl.innerText = minStr + ':' + secStr;
+            timerEl.classList.add('timer-normal');
+            if (timerBox) timerBox.className = 'gh-card p-3 mb-3';
+            if (alertBanner) alertBanner.classList.add('d-none');
+
+            betBtns.forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50');
+            });
+        }
+    }
+
+    function showWinPopup(bet) {
+        document.getElementById('winModalPeriod').innerText = bet.period_number;
+        document.getElementById('winModalNumber').innerText = bet.winning_number;
+        document.getElementById('winModalAmount').innerText = '+₹' + bet.win_amount;
+
+        const colorsDiv = document.getElementById('winModalColors');
+        colorsDiv.innerHTML = '';
+        if (bet.winning_colors) {
+            bet.winning_colors.forEach(c => {
+                colorsDiv.innerHTML += `<span class="badge rounded-pill me-1 text-uppercase ${c === 'green' ? 'bg-success' : (c === 'red' ? 'bg-danger' : 'bg-purple')}" style="${c === 'violet' ? 'background:#8B5CF6;' : ''}">${c}</span>`;
+            });
+        }
+
+        winResultModal.show();
+        if (window.soundManager) window.soundManager.play('win');
+        if (window.animationManager) {
+            window.animationManager.triggerConfetti(70);
+            window.animationManager.animateCoinsToWallet(document.getElementById('winResultModal'));
+        }
+    }
+
+    function showLossPopup(bet) {
+        document.getElementById('lossModalPeriod').innerText = bet.period_number;
+        document.getElementById('lossModalNumber').innerText = bet.winning_number;
+        document.getElementById('lossModalBetType').innerText = bet.bet_type;
+        document.getElementById('lossModalBetAmount').innerText = '₹' + bet.bet_amount;
+
+        const colorsDiv = document.getElementById('lossModalColors');
+        colorsDiv.innerHTML = '';
+        if (bet.winning_colors) {
+            bet.winning_colors.forEach(c => {
+                colorsDiv.innerHTML += `<span class="badge rounded-pill me-1 text-uppercase ${c === 'green' ? 'bg-success' : (c === 'red' ? 'bg-danger' : 'bg-purple')}" style="${c === 'violet' ? 'background:#8B5CF6;' : ''}">${c}</span>`;
+            });
+        }
+
+        lossResultModal.show();
+        if (window.soundManager) window.soundManager.play('lose');
+        if (window.animationManager) window.animationManager.shakeScreen();
     }
 
     // Countdown Timer Loop (1 sec interval)

@@ -46,7 +46,7 @@
         </div>
         <canvas id="wheelCanvas" width="280" height="280"
                 class="rounded-circle shadow"
-                style="border: 4px solid #EAB308; display: block;"></canvas>
+                style="border: 4px solid #EAB308; display: block; max-width: 100%; height: auto; margin: 0 auto;"></canvas>
     </div>
 
     {{-- Result display --}}
@@ -318,11 +318,17 @@
 
             function easeOut(t) { return 1 - Math.pow(1 - t, 4); }
 
+            let lastTickAngle = currentAngle;
             function animate(now) {
                 const elapsed  = now - startTime;
                 const progress = Math.min(elapsed / DURATION, 1);
                 const angle    = currentAngle + (targetAngle - currentAngle) * easeOut(progress);
                 drawWheel(angle);
+
+                if (Math.abs(angle - lastTickAngle) > 0.35) {
+                    if (window.soundManager) window.soundManager.play('wheelTick');
+                    lastTickAngle = angle;
+                }
 
                 if (progress < 1) {
                     requestAnimationFrame(animate);
@@ -365,10 +371,21 @@
                 const won = sector.mult > 0;
 
                 banner.classList.remove('d-none');
-                bannerT.className = 'badge fs-6 px-4 py-2 rounded-pill ' + (won ? 'bg-success' : 'bg-danger');
+                bannerT.className = 'badge fs-6 px-4 py-2 rounded-pill ' + (won ? 'bg-success gh-glow-success' : 'bg-danger gh-red-alert-pulse');
                 bannerT.innerText = won
                     ? `🎉 ${sector.label} — +₹${data.win_amount}`
-                    : '💸 0X — Better Luck Next Time!';
+                    : `💥 ${sector.label} — Better Luck Next Time!`;
+
+                if (won) {
+                    if (window.soundManager) window.soundManager.play('win');
+                    if (window.animationManager) {
+                        window.animationManager.triggerConfetti(60);
+                        window.animationManager.animateCoinsToWallet(banner);
+                    }
+                } else {
+                    if (window.soundManager) window.soundManager.play('lose');
+                    if (window.animationManager) window.animationManager.shakeScreen();
+                }
 
                 // Prepend to history table
                 prependHistoryRow(sector, data);

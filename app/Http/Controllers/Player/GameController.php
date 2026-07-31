@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Game;
 use App\Models\GameBet;
 use App\Models\GameResult;
+use App\Services\CrashGameService;
+use App\Services\CrashHistoryService;
 use App\Services\GameEngineService;
 use App\Services\MineGameService;
 use App\Services\WalletService;
@@ -17,15 +19,21 @@ class GameController extends Controller
     protected WalletService $walletService;
     protected GameEngineService $gameEngine;
     protected MineGameService $mineGameService;
+    protected CrashGameService $crashGameService;
+    protected CrashHistoryService $crashHistoryService;
 
     public function __construct(
         WalletService $walletService,
         GameEngineService $gameEngine,
-        MineGameService $mineGameService
+        MineGameService $mineGameService,
+        CrashGameService $crashGameService,
+        CrashHistoryService $crashHistoryService
     ) {
         $this->walletService = $walletService;
         $this->gameEngine = $gameEngine;
         $this->mineGameService = $mineGameService;
+        $this->crashGameService = $crashGameService;
+        $this->crashHistoryService = $crashHistoryService;
     }
 
     public function index()
@@ -367,27 +375,53 @@ class GameController extends Controller
         return response()->json(['success' => true, 'history' => $history]);
     }
 
+    public function getCrashState(Request $request)
+    {
+        $state = $this->crashGameService->getSynchronizedState(auth()->user());
+        return response()->json($state);
+    }
+
+    public function placeCrashBet(Request $request)
+    {
+        $request->validate([
+            'bet_amount' => 'required|numeric|min:1',
+        ]);
+
+        try {
+            $result = $this->crashGameService->placeBet(auth()->user(), (float)$request->bet_amount);
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
+        }
+    }
+
     public function cashoutCrash(Request $request)
     {
         $request->validate([
-            'bet_id' => 'required|exists:game_bets,id',
+            'bet_id' => 'required|integer',
             'multiplier' => 'required|numeric|min:1.00',
         ]);
 
-        $bet = GameBet::where('user_id', auth()->id())->findOrFail($request->bet_id);
-        if ($bet->status !== 'pending') {
-            return response()->json(['success' => false, 'message' => 'Bet already settled'], 400);
+        try {
+            $result = $this->crashGameService->processCashout(
+                auth()->user(),
+                (int)$request->bet_id,
+                (float)$request->multiplier
+            );
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
         }
+    }
 
-        $winAmount = $this->gameEngine->processCrashCashout($bet, $request->multiplier);
-        $userWallet = auth()->user()->wallet->fresh();
+    public function showMyCrashHistory(Request $request)
+    {
+        $dateFilter = $request->query('date', 'all');
+        $statusFilter = $request->query('status', 'all');
 
-        return response()->json([
-            'success' => true,
-            'message' => "Cashed out Rs {$winAmount} successfully!",
-            'win_amount' => number_format($winAmount, 2),
-            'new_balance' => number_format($userWallet->main_balance, 2),
-        ]);
+        $orders = $this->crashHistoryService->getUserHistory(auth()->id(), $dateFilter, $statusFilter);
+
+        return view('player.games.crash_history', compact('orders', 'dateFilter', 'statusFilter'));
     }
 
     public function settleSpinWheel(Request $request)

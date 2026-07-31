@@ -65,11 +65,11 @@
 
                 <div class="mb-3">
                     <label class="form-label text-secondary small fw-semibold">DEPOSIT AMOUNT (₹)</label>
-                    <div class="d-flex gap-2 mb-2">
-                        <button type="button" class="btn btn-outline-primary btn-sm flex-fill rounded-pill" onclick="setDeposit(200)">₹200</button>
-                        <button type="button" class="btn btn-outline-primary btn-sm flex-fill rounded-pill" onclick="setDeposit(500)">₹500</button>
-                        <button type="button" class="btn btn-outline-primary btn-sm flex-fill rounded-pill" onclick="setDeposit(1000)">₹1000</button>
-                        <button type="button" class="btn btn-outline-primary btn-sm flex-fill rounded-pill" onclick="setDeposit(5000)">₹5000</button>
+                    <div class="d-flex gap-1 gap-sm-2 mb-2">
+                        <button type="button" class="btn btn-outline-primary btn-sm flex-fill rounded-pill px-1" style="font-size: 0.78rem;" onclick="setDeposit(200)">₹200</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm flex-fill rounded-pill px-1" style="font-size: 0.78rem;" onclick="setDeposit(500)">₹500</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm flex-fill rounded-pill px-1" style="font-size: 0.78rem;" onclick="setDeposit(1000)">₹1000</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm flex-fill rounded-pill px-1" style="font-size: 0.78rem;" onclick="setDeposit(5000)">₹5000</button>
                     </div>
                     <input type="number" name="amount" id="depositAmountInput" class="form-control form-control-lg fw-bold" value="500" min="100" required>
                 </div>
@@ -167,7 +167,18 @@
 <script>
     function setDeposit(val) {
         document.getElementById('depositAmountInput').value = val;
+        if (window.soundManager) window.soundManager.play('click');
     }
+
+    @if(session('success'))
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.soundManager) window.soundManager.play('deposit');
+        if (window.animationManager) {
+            window.animationManager.triggerConfetti(50);
+            window.animationManager.animateCoinsToWallet();
+        }
+    });
+    @endif
 </script>
 @endpush
 @endsection

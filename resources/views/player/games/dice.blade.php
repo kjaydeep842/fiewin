@@ -352,9 +352,12 @@
             const resultNum = document.getElementById('diceResultNumber');
             const resultLbl = document.getElementById('diceResultLabel');
 
-            diceEl.classList.add('dice-rolling');
+            diceEl.classList.add('dice-rolling', 'gh-pulse-warning');
             resultNum.innerText = '?';
+            resultNum.classList.remove('gh-glow-success', 'gh-timer-pulse');
             resultLbl.innerText = 'ROLLING...';
+
+            if (window.soundManager) window.soundManager.play('diceRoll');
 
             // Flash random faces during animation
             let flashCount = 0;
@@ -367,7 +370,7 @@
 
             // 3. After 800ms animation, settle with server
             await new Promise(r => setTimeout(r, 800));
-            diceEl.classList.remove('dice-rolling');
+            diceEl.classList.remove('dice-rolling', 'gh-pulse-warning');
 
             const settleForm = new FormData();
             settleForm.append('bet_id', data.bet.id);
@@ -395,6 +398,7 @@
             const won = settleData.status === 'won';
             resultLbl.innerText = won ? '🎉 YOU WIN!' : '❌ YOU LOST';
             resultLbl.className = 'fw-bold ' + (won ? 'text-success' : 'text-danger');
+            resultNum.classList.add(won ? 'gh-glow-success' : 'gh-timer-pulse');
 
             updateTopWalletBalance(settleData.new_balance);
 
@@ -406,9 +410,16 @@
                 document.getElementById('winModalRolled').innerText  = rolled;
                 document.getElementById('winModalAmount').innerText  = '+₹' + settleData.win_amount;
                 diceWinModal.show();
+                if (window.soundManager) window.soundManager.play('win');
+                if (window.animationManager) {
+                    window.animationManager.triggerConfetti(60);
+                    window.animationManager.animateCoinsToWallet(diceEl);
+                }
             } else {
                 document.getElementById('lossModalRolled').innerText = rolled;
                 diceLossModal.show();
+                if (window.soundManager) window.soundManager.play('lose');
+                if (window.animationManager) window.animationManager.shakeScreen();
             }
 
         } catch (err) {
