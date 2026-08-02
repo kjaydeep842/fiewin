@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Player;
 use App\Http\Controllers\Controller;
 use App\Models\BankAccount;
 use App\Models\Deposit;
+use App\Models\DepositRequest;
 use App\Models\PaymentMethod;
 use App\Models\WalletTransaction;
 use App\Models\Withdrawal;
+use App\Services\ManualDepositService;
 use App\Services\PaymentGatewayService;
 use App\Services\WalletService;
 use Illuminate\Http\Request;
@@ -16,11 +18,16 @@ class WalletController extends Controller
 {
     protected PaymentGatewayService $paymentService;
     protected WalletService $walletService;
+    protected ManualDepositService $manualDepositService;
 
-    public function __construct(PaymentGatewayService $paymentService, WalletService $walletService)
-    {
+    public function __construct(
+        PaymentGatewayService $paymentService,
+        WalletService $walletService,
+        ManualDepositService $manualDepositService
+    ) {
         $this->paymentService = $paymentService;
         $this->walletService = $walletService;
+        $this->manualDepositService = $manualDepositService;
     }
 
     public function index()
@@ -30,32 +37,116 @@ class WalletController extends Controller
         $paymentMethods = PaymentMethod::where('is_active', true)->get();
         $bankAccounts = BankAccount::where('user_id', $user->id)->get();
         $deposits = Deposit::where('user_id', $user->id)->latest()->take(10)->get();
+        $manualDeposits = DepositRequest::where('user_id', $user->id)->with('merchantAccount')->latest()->take(10)->get();
         $withdrawals = Withdrawal::where('user_id', $user->id)->latest()->take(10)->get();
         $transactions = WalletTransaction::where('wallet_id', $wallet->id)->latest()->take(20)->get();
 
-        return view('player.wallet.index', compact('wallet', 'paymentMethods', 'bankAccounts', 'deposits', 'withdrawals', 'transactions'));
+        return view('player.wallet.index', compact('wallet', 'paymentMethods', 'bankAccounts', 'deposits', 'manualDeposits', 'withdrawals', 'transactions'));
     }
 
+    /**
+     * Initiate Manual Merchant Deposit and redirect to Checkout.
+     */
     public function deposit(Request $request)
     {
         $request->validate([
             'payment_method' => 'required|string',
             'amount' => 'required|numeric|min:10',
-            'utr_number' => 'nullable|string',
+            'utr_number' => 'nullable|string|max:64',
+            'screenshot' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
         ]);
 
+        $pmInput = strtolower($request->input('payment_method', 'upi'));
+        $pmType = str_contains($pmInput, 'bank') ? 'bank_transfer' : 'upi';
+
         try {
-            $deposit = $this->paymentService->initiateDeposit(
-                auth()->id(),
-                $request->payment_method,
-                $request->amount,
-                $request->utr_number
+            $depositRequest = $this->manualDepositService->createDepositRequest(
+                auth()->user(),
+                (float)$request->input('amount'),
+                $pmType
             );
 
-            return back()->with('success', "Deposit request submitted successfully! Tx ID: {$deposit->transaction_id}");
+            if ($request->filled('utr_number')) {
+                $this->manualDepositService->submitPaymentProof(
+                    $depositRequest,
+                    $request->input('utr_number'),
+                    $request->file('screenshot'),
+                    $request->input('user_remarks')
+                );
+            }
+
+            return redirect()->route('wallet.deposit.checkout', $depositRequest->deposit_id)
+                ->with('success', "Deposit Request #{$depositRequest->deposit_id} created! Please complete payment to assigned merchant.");
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
         }
+    }
+
+    /**
+     * View Deposit Checkout Screen with assigned Merchant, Timer & UTR Upload.
+     */
+    public function checkout($depositId)
+    {
+        $user = auth()->user();
+        $depositRequest = DepositRequest::where('deposit_id', $depositId)
+            ->where('user_id', $user->id)
+            ->with(['merchantAccount', 'proofs', 'verifications'])
+            ->firstOrFail();
+
+        return view('player.wallet.deposit_checkout', compact('depositRequest'));
+    }
+
+    /**
+     * Submit UTR & Payment Screenshot Proof
+     */
+    public function submitProof(Request $request, $depositId)
+    {
+        $request->validate([
+            'utr_number' => 'required|string|min:6|max:64',
+            'screenshot' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
+            'user_remarks' => 'nullable|string|max:255',
+        ]);
+
+        $user = auth()->user();
+        $depositRequest = DepositRequest::where('deposit_id', $depositId)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        try {
+            $this->manualDepositService->submitPaymentProof(
+                $depositRequest,
+                $request->input('utr_number'),
+                $request->file('screenshot'),
+                $request->input('user_remarks')
+            );
+
+            return redirect()->route('wallet.deposit.checkout', $depositId)
+                ->with('success', "Payment UTR #{$request->input('utr_number')} submitted successfully! Pending admin verification.");
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Fetch Live Deposit Status JSON
+     */
+    public function depositStatus($depositId)
+    {
+        $user = auth()->user();
+        $depositRequest = DepositRequest::where('deposit_id', $depositId)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        return response()->json([
+            'success' => true,
+            'deposit_id' => $depositRequest->deposit_id,
+            'status' => $depositRequest->status,
+            'is_expired' => $depositRequest->is_expired,
+            'seconds_remaining' => $depositRequest->seconds_remaining,
+            'utr_number' => $depositRequest->utr_number,
+            'admin_notes' => $depositRequest->admin_notes,
+            'user_balance' => number_format($user->wallet->fresh()->main_balance, 2),
+        ]);
     }
 
     public function withdraw(Request $request)

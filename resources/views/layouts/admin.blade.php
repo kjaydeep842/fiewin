@@ -39,7 +39,7 @@
         .admin-sidebar {
             width: 240px;
             background: var(--admin-sidebar-bg);
-            min-height: 100vh;
+            height: 100vh;
             border-right: 1px solid var(--admin-border);
             position: fixed;
             top: 0;
@@ -56,6 +56,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            flex-shrink: 0;
         }
 
         .admin-sidebar-brand .brand-icon {
@@ -85,6 +86,8 @@
         .admin-sidebar-nav {
             padding: 10px 12px;
             flex: 1;
+            overflow-y: auto;
+            scrollbar-width: thin;
         }
 
         .admin-nav-section {
@@ -296,11 +299,41 @@
                 <i class="bi bi-people"></i> User Management
             </a>
             <a href="{{ route('admin.games.index') }}" class="admin-nav-link {{ request()->routeIs('admin.games.*') ? 'active' : '' }}">
-                <i class="bi bi-controller"></i> Game Engines & RTP
+                <i class="bi bi-sliders"></i> Game Engines & RTP
+            </a>
+
+            <div class="admin-nav-section mt-2">Game Controls</div>
+
+            <a href="{{ route('admin.fast-parity.dashboard') }}" class="admin-nav-link {{ request()->routeIs('admin.fast-parity.*') ? 'active' : '' }}">
+                <i class="bi bi-lightning-charge-fill text-warning"></i> Fast Parity (30s)
+            </a>
+            <a href="{{ route('admin.parity.dashboard') }}" class="admin-nav-link {{ request()->routeIs('admin.parity.*') ? 'active' : '' }}">
+                <i class="bi bi-clock-fill text-primary"></i> Parity (3-Min)
+            </a>
+            <a href="{{ route('admin.mines-admin.dashboard') }}" class="admin-nav-link {{ request()->routeIs('admin.mines-admin.*') ? 'active' : '' }}">
+                <i class="bi bi-gem text-warning"></i> Mines
+            </a>
+            <a href="{{ route('admin.andar-bahar.dashboard') }}" class="admin-nav-link {{ request()->routeIs('admin.andar-bahar.*') ? 'active' : '' }}">
+                <i class="bi bi-suit-spade-fill text-primary"></i> Andar Bahar
+            </a>
+            <a href="{{ route('admin.jet.dashboard') }}" class="admin-nav-link {{ request()->routeIs('admin.jet.*') ? 'active' : '' }}">
+                <i class="bi bi-airplane-engines-fill text-success"></i> Jet Flight
+            </a>
+            <a href="{{ route('admin.crash-admin.dashboard') }}" class="admin-nav-link {{ request()->routeIs('admin.crash-admin.*') ? 'active' : '' }}">
+                <i class="bi bi-rocket-takeoff-fill text-danger"></i> Crash Rocket
+            </a>
+            <a href="{{ route('admin.spin-wheel.dashboard') }}" class="admin-nav-link {{ request()->routeIs('admin.spin-wheel.*') ? 'active' : '' }}">
+                <i class="bi bi-arrow-repeat text-info"></i> Spin Wheel
+            </a>
+            <a href="{{ route('admin.dice-admin.dashboard') }}" class="admin-nav-link {{ request()->routeIs('admin.dice-admin.*') ? 'active' : '' }}">
+                <i class="bi bi-dice-6-fill text-primary"></i> Dice Roll
             </a>
 
             <div class="admin-nav-section mt-1">Payments</div>
 
+            <a href="{{ route('admin.merchants.index') }}" class="admin-nav-link {{ request()->routeIs('admin.merchants.*') ? 'active' : '' }}">
+                <i class="bi bi-bank text-primary"></i> Merchant Accounts
+            </a>
             <a href="{{ route('admin.deposits.index') }}" class="admin-nav-link {{ request()->routeIs('admin.deposits.*') ? 'active' : '' }}">
                 <i class="bi bi-arrow-down-left-circle text-success"></i> Deposits Approval
             </a>

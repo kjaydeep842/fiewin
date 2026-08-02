@@ -13,17 +13,26 @@
 
 <!-- Top Game Header -->
 <div id="timerBoxContainer" class="gh-card p-3 mb-3">
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-center mb-2">
         <div class="d-flex align-items-center gap-2">
-            <a href="{{ route('home') }}" class="btn btn-sm btn-light border rounded-circle"><i class="bi bi-arrow-left"></i></a>
+            <a href="{{ route('home') }}" class="btn btn-sm btn-light border rounded-circle py-1 px-2"><i class="bi bi-arrow-left"></i></a>
             <div>
-                <h6 class="fw-bold mb-0 text-dark" id="gameModeTitle">Fast Parity (30s)</h6>
-                <small class="text-secondary" style="font-size: 0.72rem;">Period #<span id="periodNumber" class="fw-bold text-primary">{{ $currentPeriod }}</span></small>
+                <h6 class="fw-bold mb-0 text-dark" id="gameModeTitle" style="font-size: 0.95rem;">Fast Parity (30s)</h6>
             </div>
         </div>
+        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold flex-shrink-0" style="font-size: 0.75rem;" onclick="showRulesModal()">
+            <i class="bi bi-book-half me-1"></i>Rules
+        </button>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center pt-2 border-top border-light">
+        <div>
+            <small class="text-secondary d-block fw-semibold" style="font-size: 0.65rem; line-height: 1.1;">PERIOD NUMBER</small>
+            <span class="fw-bold text-primary font-monospace" style="font-size: 0.9rem;">#<span id="periodNumber">{{ $currentPeriod }}</span></span>
+        </div>
         <div class="text-end">
-            <small class="text-secondary d-block fw-semibold" style="font-size: 0.65rem;">COUNTDOWN</small>
-            <div id="countdownTimer" class="fs-4 fw-bold text-danger font-monospace">00:30</div>
+            <small class="text-secondary d-block fw-semibold" style="font-size: 0.65rem; line-height: 1.1;">COUNTDOWN</small>
+            <div id="countdownTimer" class="fs-4 fw-bold text-danger font-monospace lh-1">00:30</div>
         </div>
     </div>
 </div>
@@ -37,39 +46,64 @@
 </div>
 
 <!-- Last Period Live Result Banner -->
+@php
+    $lastResData = $lastResult->result_data ?? [];
+    $lastResNum = $lastResData['number'] ?? null;
+    $lastResColors = $lastResData['colors'] ?? [];
+
+    if ($lastResNum === 0) {
+        $numBgCss = 'background: linear-gradient(135deg, #EF4444 50%, #8B5CF6 50%); color: #ffffff;';
+    } elseif ($lastResNum === 5) {
+        $numBgCss = 'background: linear-gradient(135deg, #10B981 50%, #8B5CF6 50%); color: #ffffff;';
+    } else {
+        $numBgCss = 'background: #ffffff; color: #111827;';
+    }
+@endphp
+
+<!-- Last Period Result Banner -->
 <div class="gh-card p-3 mb-3" style="background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%); color: #ffffff;">
     <div class="d-flex justify-content-between align-items-center">
         <div>
             <small class="opacity-75 d-block" style="font-size: 0.65rem;">LAST PERIOD RESULT</small>
-            <div class="fw-bold text-white" style="font-size: 0.85rem;">Period #<span id="lastPeriodNumText">---</span></div>
+            <div class="fw-bold text-white" style="font-size: 0.85rem;">Period #<span id="lastPeriodNumText">{{ $lastResult->period_number ?? '---' }}</span></div>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <span id="lastResultNumBadge" class="display-6 fw-bold font-monospace bg-white text-dark rounded-circle px-3 py-1 shadow-sm">--</span>
+            <span id="lastResultNumBadge" class="display-6 fw-bold font-monospace rounded-circle px-3 py-1 shadow-sm" style="{{ $numBgCss }}">{{ $lastResNum !== null ? $lastResNum : '--' }}</span>
             <div id="lastResultColorsBadge">
-                <span class="badge bg-light text-dark">WAITING</span>
+                @forelse($lastResColors as $c)
+                    <span class="badge rounded-pill me-1 text-uppercase {{ $c === 'green' ? 'bg-success' : ($c === 'red' ? 'bg-danger' : 'bg-purple') }}" style="{{ $c === 'violet' ? 'background:#8B5CF6;' : '' }}">{{ $c }}</span>
+                @empty
+                    <span class="badge bg-light text-dark">WAITING</span>
+                @endforelse
             </div>
         </div>
     </div>
 </div>
 
 <!-- Color Bet Buttons: Green (2X), Violet (4.5X), Red (2X) -->
-<div class="row g-2 mb-3">
+<div class="row g-2 mb-3 align-items-stretch">
     <div class="col-4">
-        <button class="btn gh-btn-success w-100 py-3 rounded-4 shadow-sm" onclick="selectBet('green')">
-            <span class="d-block fw-bold fs-6">JOIN GREEN</span>
-            <small class="d-block opacity-90 font-monospace" style="font-size: 0.7rem;">2X Payout</small>
+        <button class="btn w-100 py-3 rounded-4 shadow-sm text-white d-flex flex-column align-items-center justify-content-center h-100" 
+                style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); border: none;" 
+                onclick="selectBet('green')">
+            <span class="fw-bold d-block text-nowrap" style="font-size: clamp(0.75rem, 3.2vw, 0.95rem); letter-spacing: -0.01em;">JOIN GREEN</span>
+            <small class="opacity-90 font-monospace" style="font-size: 0.65rem;">2X Payout</small>
         </button>
     </div>
     <div class="col-4">
-        <button class="btn w-100 py-3 rounded-4 shadow-sm text-white" style="background: linear-gradient(135deg, #8B5CF6, #7C3AED);" onclick="selectBet('violet')">
-            <span class="d-block fw-bold fs-6">JOIN VIOLET</span>
-            <small class="d-block opacity-90 font-monospace" style="font-size: 0.7rem;">4.5X Payout</small>
+        <button class="btn w-100 py-3 rounded-4 shadow-sm text-white d-flex flex-column align-items-center justify-content-center h-100" 
+                style="background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%); border: none;" 
+                onclick="selectBet('violet')">
+            <span class="fw-bold d-block text-nowrap" style="font-size: clamp(0.75rem, 3.2vw, 0.95rem); letter-spacing: -0.01em;">JOIN VIOLET</span>
+            <small class="opacity-90 font-monospace" style="font-size: 0.65rem;">4.5X Payout</small>
         </button>
     </div>
     <div class="col-4">
-        <button class="btn w-100 py-3 rounded-4 shadow-sm text-white" style="background: linear-gradient(135deg, #EF4444, #DC2626);" onclick="selectBet('red')">
-            <span class="d-block fw-bold fs-6">JOIN RED</span>
-            <small class="d-block opacity-90 font-monospace" style="font-size: 0.7rem;">2X Payout</small>
+        <button class="btn w-100 py-3 rounded-4 shadow-sm text-white d-flex flex-column align-items-center justify-content-center h-100" 
+                style="background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%); border: none;" 
+                onclick="selectBet('red')">
+            <span class="fw-bold d-block text-nowrap" style="font-size: clamp(0.75rem, 3.2vw, 0.95rem); letter-spacing: -0.01em;">JOIN RED</span>
+            <small class="opacity-90 font-monospace" style="font-size: 0.65rem;">2X Payout</small>
         </button>
     </div>
 </div>
@@ -83,10 +117,18 @@
     <div class="row g-2">
         @for($num = 0; $num <= 9; $num++)
             @php
-                $btnStyle = ($num == 0) ? 'border-danger text-danger' : (($num == 5) ? 'border-success text-success' : (($num % 2 == 1) ? 'border-success text-success' : 'border-danger text-danger'));
+                if ($num == 0) {
+                    $btnCss = 'background: linear-gradient(135deg, #EF4444 50%, #8B5CF6 50%); color: #ffffff; border: none;';
+                } elseif ($num == 5) {
+                    $btnCss = 'background: linear-gradient(135deg, #10B981 50%, #8B5CF6 50%); color: #ffffff; border: none;';
+                } elseif ($num % 2 == 1) {
+                    $btnCss = 'background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #ffffff; border: none;';
+                } else {
+                    $btnCss = 'background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%); color: #ffffff; border: none;';
+                }
             @endphp
             <div class="col" style="flex: 0 0 20%; max-width: 20%;">
-                <button class="btn btn-outline-secondary {{ $btnStyle }} w-100 py-2 rounded-3 fw-bold fs-5 shadow-sm" onclick="selectBet('{{ $num }}')">
+                <button class="btn w-100 py-2 rounded-3 fw-bold fs-4 text-white shadow-sm" style="{{ $btnCss }}" onclick="selectBet('{{ $num }}')">
                     {{ $num }}
                 </button>
             </div>
@@ -94,13 +136,14 @@
     </div>
 </div>
 
-<!-- Modal Bet Confirmation -->
+<!-- Modal Bet Confirmation (With Dynamic Color Theme Header & Live Return Breakdown) -->
 <div class="modal fade" id="betModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 350px; margin: auto;">
-        <div class="modal-content rounded-4 border-0 shadow">
-            <div class="modal-header border-light py-2">
-                <h6 class="modal-title fw-bold text-dark" id="modalBetTypeTitle">Place Bet</h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 360px; margin: auto;">
+        <div class="modal-content rounded-4 border-0 shadow overflow-hidden">
+            <div id="betModalHeader" class="modal-header border-0 py-3 text-white" style="background: linear-gradient(135deg, #10B981, #059669);">
+                <h6 class="modal-title fw-bold mb-0" id="modalBetTypeTitle">Place Bet on GREEN</h6>
+                <span id="modalBetTypeBadge" class="badge bg-white text-success border fw-bold ms-auto">2.0X PAYOUT</span>
+                <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="modal"></button>
             </div>
             <form id="ajaxBetForm" onsubmit="handleAjaxBetSubmit(event)">
                 @csrf
@@ -111,22 +154,101 @@
                 <div class="modal-body py-3">
                     <label class="form-label text-secondary small fw-semibold" style="font-size: 0.72rem;">PRESET AMOUNT (₹)</label>
                     <div class="d-flex gap-2 mb-3">
-                        <button type="button" class="btn btn-outline-primary btn-sm flex-fill rounded-pill py-1" onclick="setBetAmount(10)">₹10</button>
-                        <button type="button" class="btn btn-outline-primary btn-sm flex-fill rounded-pill py-1" onclick="setBetAmount(100)">₹100</button>
-                        <button type="button" class="btn btn-outline-primary btn-sm flex-fill rounded-pill py-1" onclick="setBetAmount(1000)">₹1000</button>
-                        <button type="button" class="btn btn-outline-primary btn-sm flex-fill rounded-pill py-1" onclick="setBetAmount(10000)">₹10000</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm flex-fill rounded-pill py-1 fw-bold" onclick="setBetAmount(10)">₹10</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm flex-fill rounded-pill py-1 fw-bold" onclick="setBetAmount(100)">₹100</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm flex-fill rounded-pill py-1 fw-bold" onclick="setBetAmount(1000)">₹1000</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm flex-fill rounded-pill py-1 fw-bold" onclick="setBetAmount(10000)">₹10000</button>
                     </div>
 
-                    <div class="input-group">
+                    <label class="form-label text-secondary small fw-semibold" style="font-size: 0.72rem;">CUSTOM BET AMOUNT (₹)</label>
+                    <div class="input-group mb-2">
                         <span class="input-group-text bg-light fw-bold">₹</span>
-                        <input type="number" name="bet_amount" id="inputBetAmount" class="form-control form-control-lg fw-bold" value="10" min="{{ $game->min_entry_fee }}" max="{{ $game->max_entry_fee }}" required>
+                        <input type="number" name="bet_amount" id="inputBetAmount" class="form-control form-control-lg fw-bold" value="10" min="{{ $game->min_entry_fee }}" max="{{ $game->max_entry_fee }}" oninput="updateBetPayoutPreview()" required>
+                    </div>
+
+                    <!-- Live Calculation Breakdown Preview Box -->
+                    <div id="betPayoutPreviewBox" class="p-3 rounded-3 mt-3 border" style="background: rgba(30,136,229,0.04);">
+                        <div class="d-flex justify-content-between text-secondary mb-1" style="font-size: 0.76rem;">
+                            <span>Contract Amount:</span>
+                            <span id="previewContractAmt" class="fw-bold text-dark font-monospace">₹10.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between text-secondary mb-1" style="font-size: 0.76rem;">
+                            <span>Multiplier Payout:</span>
+                            <span id="previewMultiplier" class="fw-bold text-primary font-monospace">2.0X</span>
+                        </div>
+                        <hr class="my-2 opacity-25">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-semibold text-dark" style="font-size: 0.8rem;">Est. Win Payout:</span>
+                            <div class="text-end">
+                                <span id="previewEstWin" class="fw-extrabold text-success font-monospace fs-5">₹19.50</span>
+                                <small id="previewCalculationFormula" class="d-block text-muted font-monospace" style="font-size: 0.68rem;">10.00 + 9.50 = ₹19.50</small>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
                 <div class="modal-footer border-light py-2">
                     <button type="button" class="btn btn-light rounded-pill px-3 py-1 btn-sm" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" id="submitBetBtn" class="btn gh-btn-success rounded-pill px-4 py-1 btn-sm">CONFIRM BET</button>
+                    <button type="submit" id="submitBetBtn" class="btn gh-btn-success rounded-pill px-4 py-1 btn-sm fw-bold">CONFIRM BET</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- GAME RULES MODAL -->
+<div class="modal fade" id="rulesModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 420px; margin: auto;">
+        <div class="modal-content rounded-4 border-0 shadow overflow-hidden">
+            <div class="modal-header border-0 py-3 text-white" style="background: linear-gradient(135deg, #1E88E5, #1565C0);">
+                <h6 class="modal-title fw-bold mb-0">
+                    <i class="bi bi-book-half me-2"></i>Fast Parity Game Rules
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div class="p-3 bg-light rounded-3 mb-3 border">
+                    <h6 class="fw-bold text-primary mb-2" style="font-size: 0.85rem;"><i class="bi bi-clock me-1"></i>1. Countdown & Betting Period</h6>
+                    <p class="text-secondary small mb-0">
+                        • <strong>30s Fast Parity</strong>: 25 seconds betting period + 5 seconds locked countdown.<br>
+                        • <strong>1m Parity</strong>: 55 seconds betting period + 5 seconds locked countdown.<br>
+                        • Betting closes automatically during the last 5 seconds of every period.
+                    </p>
+                </div>
+
+                <div class="p-3 bg-light rounded-3 mb-3 border">
+                    <h6 class="fw-bold text-success mb-2" style="font-size: 0.85rem;"><i class="bi bi-palette me-1"></i>2. Color Payout Rules</h6>
+                    <ul class="text-secondary small mb-0 ps-3">
+                        <li class="mb-1">
+                            <strong class="text-success">JOIN GREEN (1, 3, 7, 9)</strong>: If result is 1, 3, 7, 9, you win <strong>2.0X</strong> (₹10 &rarr; ₹19.50). If result is 5, you win <strong>1.5X</strong>.
+                        </li>
+                        <li class="mb-1">
+                            <strong class="text-danger">JOIN RED (2, 4, 6, 8)</strong>: If result is 2, 4, 6, 8, you win <strong>2.0X</strong> (₹10 &rarr; ₹19.50). If result is 0, you win <strong>1.5X</strong>.
+                        </li>
+                        <li class="mb-1">
+                            <strong style="color: #8B5CF6;">JOIN VIOLET (0, 5)</strong>: If result is 0 or 5, you win <strong>4.5X</strong> (₹10 &rarr; ₹43.25).
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="p-3 bg-light rounded-3 mb-3 border">
+                    <h6 class="fw-bold text-warning mb-2" style="font-size: 0.85rem;"><i class="bi bi-grid-3x3-gap-fill me-1"></i>3. Number Payout Rules (0 - 9)</h6>
+                    <p class="text-secondary small mb-0">
+                        Select any single number from 0 to 9.<br>
+                        If the period result matches your selected number, you win <strong>9.0X Multiplier</strong> (₹10 &rarr; ₹86.00).
+                    </p>
+                </div>
+
+                <div class="p-3 bg-light rounded-3 border">
+                    <h6 class="fw-bold text-dark mb-2" style="font-size: 0.85rem;"><i class="bi bi-shield-check me-1"></i>4. Security & Settlement</h6>
+                    <p class="text-secondary small mb-0">
+                        All period results are generated using Provably Fair cryptographic algorithms. Winnings are automatically credited to your wallet immediately after settlement.
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-primary w-100 py-2 rounded-pill fw-bold" data-bs-dismiss="modal">I UNDERSTAND</button>
+            </div>
         </div>
     </div>
 </div>
@@ -275,10 +397,16 @@
     const betModal = new bootstrap.Modal(document.getElementById('betModal'));
     const winResultModal = new bootstrap.Modal(document.getElementById('winResultModal'));
     const lossResultModal = new bootstrap.Modal(document.getElementById('lossResultModal'));
+    const rulesModal = new bootstrap.Modal(document.getElementById('rulesModal'));
 
     let activeInterval = 30; // Default 30 seconds mode
     let secondsLeft = 30;
     let currentPeriodNumber = "{{ $currentPeriod }}";
+    let currentBetType = 'green';
+
+    function showRulesModal() {
+        rulesModal.show();
+    }
 
     function switchGameMode(modeInterval) {
         activeInterval = modeInterval;
@@ -307,14 +435,72 @@
             alert('⚠️ Betting is closed for the last 5 seconds of this period. Please wait for the next period!');
             return;
         }
-        document.getElementById('inputBetType').value = type;
+        currentBetType = String(type).toLowerCase();
+        document.getElementById('inputBetType').value = currentBetType;
         document.getElementById('inputPeriodNumber').value = currentPeriodNumber;
-        document.getElementById('modalBetTypeTitle').innerText = 'Place Bet on ' + type.toUpperCase();
+
+        const modalHeader = document.getElementById('betModalHeader');
+        const modalTitle  = document.getElementById('modalBetTypeTitle');
+        const modalBadge  = document.getElementById('modalBetTypeBadge');
+
+        if (currentBetType === 'green') {
+            modalHeader.style.background = 'linear-gradient(135deg, #10B981, #059669)';
+            modalHeader.style.color = '#ffffff';
+            modalTitle.innerText = 'Place Bet on GREEN';
+            modalBadge.innerText = '2.0X PAYOUT';
+            modalBadge.className = 'badge bg-white text-success border fw-bold ms-auto';
+        } else if (currentBetType === 'violet') {
+            modalHeader.style.background = 'linear-gradient(135deg, #8B5CF6, #7C3AED)';
+            modalHeader.style.color = '#ffffff';
+            modalTitle.innerText = 'Place Bet on VIOLET';
+            modalBadge.innerText = '4.5X PAYOUT';
+            modalBadge.className = 'badge bg-white text-purple border fw-bold ms-auto';
+        } else if (currentBetType === 'red') {
+            modalHeader.style.background = 'linear-gradient(135deg, #EF4444, #DC2626)';
+            modalHeader.style.color = '#ffffff';
+            modalTitle.innerText = 'Place Bet on RED';
+            modalBadge.innerText = '2.0X PAYOUT';
+            modalBadge.className = 'badge bg-white text-danger border fw-bold ms-auto';
+        } else {
+            modalHeader.style.background = 'linear-gradient(135deg, #1E88E5, #1565C0)';
+            modalHeader.style.color = '#ffffff';
+            modalTitle.innerText = 'Place Bet on NUMBER ' + currentBetType;
+            modalBadge.innerText = '9.0X MULTIPLIER';
+            modalBadge.className = 'badge bg-white text-primary border fw-bold ms-auto';
+        }
+
+        updateBetPayoutPreview();
         betModal.show();
     }
 
     function setBetAmount(val) {
         document.getElementById('inputBetAmount').value = val;
+        updateBetPayoutPreview();
+    }
+
+    function updateBetPayoutPreview() {
+        const amountInput = document.getElementById('inputBetAmount');
+        let amount = parseFloat(amountInput.value) || 0;
+
+        let mult = 2.0;
+        if (currentBetType === 'violet') {
+            mult = 4.5;
+        } else if (currentBetType === 'green' || currentBetType === 'red') {
+            mult = 2.0;
+        } else {
+            mult = 9.0;
+        }
+
+        // Net profit calculation
+        let profit = amount * (mult - 1) * 0.95;
+        if (profit < 0) profit = 0;
+        
+        let totalWin = amount + profit;
+
+        document.getElementById('previewContractAmt').innerText = '₹' + amount.toFixed(2);
+        document.getElementById('previewMultiplier').innerText = mult.toFixed(1) + 'X';
+        document.getElementById('previewEstWin').innerText = '₹' + totalWin.toFixed(2);
+        document.getElementById('previewCalculationFormula').innerText = `${amount} + ${profit.toFixed(2)} = ₹${totalWin.toFixed(2)}`;
     }
 
     // AJAX Bet Submission
@@ -327,16 +513,30 @@
         const formData = new FormData(document.getElementById('ajaxBetForm'));
 
         try {
-            const response = await fetch("{{ route('games.bet') }}", {
+            const response = await fetch("/games/bet", {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': "{{ csrf_token() }}",
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
                 body: formData
             });
 
-            const data = await response.json();
+            let data;
+            const text = await response.text();
+            try {
+                data = JSON.parse(text);
+            } catch (pErr) {
+                console.error('Non-JSON response received:', text);
+                if (response.status === 419) {
+                    alert('Session expired. Please refresh the page and try again.');
+                    window.location.reload();
+                    return;
+                }
+                alert('Server response error. Please refresh and try again.');
+                return;
+            }
 
             if (data.success) {
                 betModal.hide();
@@ -347,11 +547,11 @@
                 // Instantly poll state to update My Orders table
                 fetchGameState();
             } else {
-                alert(data.message || 'Error placing bet');
+                alert(data.message || 'Unable to place bet. Please check your balance.');
             }
         } catch (err) {
             console.error('Bet submit error:', err);
-            alert('Server error while placing bet');
+            alert('Bet Placement Error: ' + (err.message || 'Please check your connection and try again.'));
         } finally {
             submitBtn.disabled = false;
             submitBtn.innerText = 'CONFIRM BET';
@@ -359,12 +559,11 @@
     }
 
     function updateTopWalletBalance(balStr) {
-        const topBalanceEls = document.querySelectorAll('.font-monospace');
-        topBalanceEls.forEach(el => {
-            if (el.innerText.includes('₹')) {
-                el.innerText = '₹' + balStr;
-            }
-        });
+        const el = document.getElementById('topWalletBalance') || document.getElementById('userWalletBalance');
+        if (el) {
+            let balVal = parseFloat(String(balStr).replace(/,/g, '')) || 0.00;
+            el.innerText = '₹' + balVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
     }
 
     // Record the EXACT time this page was loaded.
@@ -375,9 +574,12 @@
     // Live Synchronized Game State Polling
     async function fetchGameState() {
         try {
-            const url = "{{ route('games.state', 'fast_parity') }}?interval=" + activeInterval;
+            const url = "/games/fast_parity/state?interval=" + activeInterval;
             const response = await fetch(url, {
-                headers: { 'Accept': 'application/json' }
+                headers: { 
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
             });
             const data = await response.json();
 
@@ -385,8 +587,11 @@
 
             // Sync period number
             currentPeriodNumber = data.current_period;
-            document.getElementById('periodNumber').innerText = currentPeriodNumber;
-            document.getElementById('inputPeriodNumber').value = currentPeriodNumber;
+            const periodNumEl = document.getElementById('periodNumber');
+            if (periodNumEl) periodNumEl.innerText = currentPeriodNumber;
+
+            const inputPeriodNumEl = document.getElementById('inputPeriodNumber');
+            if (inputPeriodNumEl) inputPeriodNumEl.value = currentPeriodNumber;
 
             // Sync remaining seconds if drift > 3s or initial sync
             if (Math.abs(secondsLeft - data.seconds_remaining) > 3 || secondsLeft <= 0) {
@@ -399,16 +604,36 @@
             }
 
             // Update Last Period Result Banner
-            if (data.last_result) {
-                document.getElementById('lastPeriodNumText').innerText = data.last_result.period_number;
-                document.getElementById('lastResultNumBadge').innerText = data.last_result.number;
+            const targetResult = data.last_result || (data.history && data.history.length > 0 ? data.history[0] : null);
+            if (targetResult) {
+                const lastPeriodTextEl = document.getElementById('lastPeriodNumText');
+                if (lastPeriodTextEl) lastPeriodTextEl.innerText = targetResult.period_number;
+
+                const lastNumEl = document.getElementById('lastResultNumBadge');
+                if (lastNumEl) {
+                    lastNumEl.innerText = targetResult.number;
+
+                    const numVal = parseInt(targetResult.number);
+                    if (numVal === 0) {
+                        lastNumEl.style.background = 'linear-gradient(135deg, #EF4444 50%, #8B5CF6 50%)';
+                        lastNumEl.style.color = '#ffffff';
+                    } else if (numVal === 5) {
+                        lastNumEl.style.background = 'linear-gradient(135deg, #10B981 50%, #8B5CF6 50%)';
+                        lastNumEl.style.color = '#ffffff';
+                    } else {
+                        lastNumEl.style.background = '#ffffff';
+                        lastNumEl.style.color = '#111827';
+                    }
+                }
 
                 const colorsBadgeDiv = document.getElementById('lastResultColorsBadge');
-                colorsBadgeDiv.innerHTML = '';
-                if (data.last_result.colors) {
-                    data.last_result.colors.forEach(c => {
-                        colorsBadgeDiv.innerHTML += `<span class="badge rounded-pill me-1 text-uppercase ${c === 'green' ? 'bg-success' : (c === 'red' ? 'bg-danger' : 'bg-purple')}" style="${c === 'violet' ? 'background:#8B5CF6;' : ''}">${c}</span>`;
-                    });
+                if (colorsBadgeDiv) {
+                    colorsBadgeDiv.innerHTML = '';
+                    if (targetResult.colors) {
+                        targetResult.colors.forEach(c => {
+                            colorsBadgeDiv.innerHTML += `<span class="badge rounded-pill me-1 text-uppercase ${c === 'green' ? 'bg-success' : (c === 'red' ? 'bg-danger' : 'bg-purple')}" style="${c === 'violet' ? 'background:#8B5CF6;' : ''}">${c}</span>`;
+                        });
+                    }
                 }
             }
 
@@ -539,6 +764,8 @@
         let secStr = secs < 10 ? '0' + secs : secs;
         
         const timerEl = document.getElementById('countdownTimer');
+        if (!timerEl) return;
+        
         const timerBox = document.getElementById('timerBoxContainer');
         const alertBanner = document.getElementById('lastSecondsAlertBanner');
         const betBtns = document.querySelectorAll('button[onclick^="selectBet"]');

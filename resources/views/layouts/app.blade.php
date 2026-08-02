@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>GameHub - Next-Gen Gaming Platform</title>
     
     <!-- Bootstrap 5 & Icons -->
@@ -10,6 +11,16 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <!-- Google Fonts (Poppins) -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Reverb WebSocket Configuration -->
+    <script>
+        window.ENABLE_WEBSOCKETS = true;
+        window.REVERB_APP_KEY = '{{ env("REVERB_APP_KEY", "fiewin_key") }}';
+        window.REVERB_HOST = '{{ env("REVERB_HOST", "127.0.0.1") }}';
+        window.REVERB_PORT = {{ env("REVERB_PORT", 8080) }};
+        window.REVERB_SCHEME = '{{ env("REVERB_SCHEME", "http") }}';
+        window.USER_ID = {{ auth()->check() ? auth()->id() : 'null' }};
+    </script>
 
     <style>
         :root {
@@ -60,11 +71,41 @@
             overflow-x: hidden;
         }
 
+        /* Mobile Responsiveness Enhancements */
+        @media (max-width: 576px) {
+            .gh-app-viewport {
+                max-width: 100% !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+            }
+            .gh-main-content {
+                padding: 10px !important;
+                padding-bottom: 85px !important;
+            }
+            canvas#jetCanvas, canvas#crashCanvas {
+                height: 250px !important;
+            }
+            .btn-lg {
+                padding-top: 12px !important;
+                padding-bottom: 12px !important;
+                font-size: 1rem !important;
+            }
+        }
+
+        /* Hide scrollbars for pill bars while preserving touch scrollability */
+        .overflow-x-auto::-webkit-scrollbar {
+            display: none !important;
+        }
+        .overflow-x-auto {
+            -ms-overflow-style: none !important;
+            scrollbar-width: none !important;
+        }
+
         /* Top Header Navigation */
         .gh-top-header {
             background: var(--gh-card-bg);
             border-bottom: 1px solid var(--gh-border);
-            padding: 10px 14px;
+            padding: 8px 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -72,16 +113,55 @@
             top: 0;
             z-index: 1040;
             width: 100%;
+            min-width: 0;
+            gap: 6px;
+        }
+
+        .gh-top-header > a:first-child {
+            flex-shrink: 0;
+            min-width: 0;
+        }
+
+        /* On very small screens hide the brand text, keep logo icon */
+        @media (max-width: 360px) {
+            .gh-brand-text { display: none !important; }
+        }
+
+        .gh-top-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+            flex-shrink: 0;
         }
 
         .gh-wallet-pill {
             background: rgba(30, 136, 229, 0.08);
             border: 1px solid rgba(30, 136, 229, 0.2);
             border-radius: 24px;
-            padding: 4px 10px;
+            padding: 4px 8px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
+            min-width: 0;
+            max-width: clamp(90px, 35vw, 180px);
+            overflow: hidden;
+        }
+
+        .gh-wallet-pill #topWalletBalance {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            min-width: 0;
+            flex: 1;
+        }
+
+        /* Shrink DEPOSIT button on small screens */
+        .gh-deposit-btn {
+            flex-shrink: 0;
+            white-space: nowrap;
+            font-size: clamp(0.65rem, 2vw, 0.78rem) !important;
+            padding: 4px 10px !important;
         }
 
         /* Buttons */
@@ -297,27 +377,43 @@
     <div class="gh-app-viewport">
         <!-- Top App Bar -->
         <header class="gh-top-header">
-            <a href="{{ route('home') }}" class="d-flex align-items-center text-decoration-none fw-bold fs-5 text-dark me-2">
-                <span class="p-1 px-2 rounded-3 me-2 text-white" style="background: linear-gradient(135deg, var(--gh-primary-blue), var(--gh-accent-purple));"><i class="bi bi-controller"></i></span>
-                <span>Game<span style="color: var(--gh-primary-blue);">Hub</span></span>
+            {{-- Brand logo + name (name hides on ≤360px) --}}
+            <a href="{{ route('home') }}" class="d-flex align-items-center text-decoration-none fw-bold text-dark" style="font-size:1.05rem; flex-shrink:0;">
+                <span class="p-1 px-2 rounded-3 me-1 text-white flex-shrink-0"
+                      style="background: linear-gradient(135deg, var(--gh-primary-blue), var(--gh-accent-purple)); font-size:1rem;">
+                    <i class="bi bi-controller"></i>
+                </span>
+                <span class="gh-brand-text">Game<span style="color: var(--gh-primary-blue);">Hub</span></span>
             </a>
 
-            <div class="d-flex align-items-center gap-1">
-                <!-- Sound Toggle Button -->
-                <button type="button" id="soundToggleBtn" class="btn btn-sm btn-light border rounded-circle" onclick="togglePlatformSound()" title="Toggle Sound">
-                    <i class="bi bi-volume-up-fill text-primary" id="soundToggleIcon"></i>
+            {{-- Right side controls --}}
+            <div class="gh-top-right">
+                {{-- Sound Toggle --}}
+                <button type="button" id="soundToggleBtn"
+                        class="btn btn-sm btn-light border rounded-circle flex-shrink-0"
+                        onclick="togglePlatformSound()" title="Toggle Sound"
+                        style="width:32px; height:32px; padding:0; display:flex; align-items:center; justify-content:center;">
+                    <i class="bi bi-volume-up-fill text-primary" id="soundToggleIcon" style="font-size:0.85rem;"></i>
                 </button>
 
                 @auth
+                    {{-- Wallet balance pill --}}
                     <a href="{{ route('wallet.index') }}" class="text-decoration-none gh-wallet-pill">
-                        <i class="bi bi-wallet2 text-primary fs-6"></i>
-                        <span id="topWalletBalance" class="fw-bold text-dark font-monospace" style="font-size: 0.82rem;">₹{{ number_format(auth()->user()->wallet?->main_balance ?? 0, 2) }}</span>
+                        <i class="bi bi-wallet2 text-primary flex-shrink-0" style="font-size:0.9rem;"></i>
+                        <span id="topWalletBalance" class="fw-bold text-dark font-monospace"
+                              style="font-size: clamp(0.68rem, 2.8vw, 0.82rem);">
+                            ₹{{ number_format(auth()->user()->wallet?->main_balance ?? 0, 2) }}
+                        </span>
                     </a>
-                    <a href="{{ route('wallet.index') }}" class="btn btn-sm gh-btn-success rounded-pill px-2 py-1 text-decoration-none fw-bold" style="font-size: 0.75rem;">DEPOSIT</a>
+                    {{-- Deposit button --}}
+                    <a href="{{ route('wallet.index') }}"
+                       class="btn gh-btn-success rounded-pill fw-bold text-decoration-none flex-shrink-0 gh-deposit-btn">
+                        DEPOSIT
+                    </a>
                 @else
                     <div class="d-flex gap-1">
-                        <a href="{{ route('login') }}" class="btn btn-sm btn-outline-primary rounded-pill px-2 fw-medium" style="font-size: 0.8rem;">Login</a>
-                        <a href="{{ route('register') }}" class="btn btn-sm gh-btn-primary rounded-pill px-2" style="font-size: 0.8rem;">Register</a>
+                        <a href="{{ route('login') }}" class="btn btn-sm btn-outline-primary rounded-pill px-2 fw-medium" style="font-size:0.8rem;">Login</a>
+                        <a href="{{ route('register') }}" class="btn btn-sm gh-btn-primary rounded-pill px-2" style="font-size:0.8rem;">Register</a>
                     </div>
                 @endauth
             </div>
@@ -399,6 +495,14 @@
             }
         }
 
+        window.updateTopWalletBalance = function(bal) {
+            const el = document.getElementById('topWalletBalance');
+            if (el) {
+                let balVal = parseFloat(String(bal).replace(/,/g, '')) || 0.00;
+                el.innerText = '₹' + balVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+        };
+
         document.addEventListener('DOMContentLoaded', () => {
             if (window.soundManager) {
                 const icon = document.getElementById('soundToggleIcon');
@@ -408,6 +512,7 @@
             }
         });
     </script>
+    <script src="{{ asset('js/websocket-manager.js') }}"></script>
     @stack('scripts')
 </body>
 </html>

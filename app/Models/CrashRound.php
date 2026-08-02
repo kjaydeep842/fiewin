@@ -11,6 +11,7 @@ class CrashRound extends Model
 
     protected $fillable = [
         'round_id',
+        'game_type',
         'crash_multiplier',
         'started_at',
         'ended_at',

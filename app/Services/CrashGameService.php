@@ -4,8 +4,10 @@ namespace App\Services;
 
 use App\Models\CrashBet;
 use App\Models\CrashRound;
+use App\Models\CrashSetting;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class CrashGameService
@@ -25,15 +27,19 @@ class CrashGameService
     }
 
     /**
-     * Get synchronized state for all connected clients.
+     * Get synchronized Crash Rocket state.
      */
     public function getSynchronizedState(?User $user): array
     {
-        $round = $this->roundService->getOrSyncActiveRound();
-        $now = Carbon::now();
+        // Cache round tick for 1 second to reduce DB load from rapid polling
+        $round = Cache::remember('crash_active_round', 1, function () {
+            return $this->roundService->getOrSyncActiveRound();
+        });
 
+        $now = Carbon::now();
         $nowTs = time();
-        $status = $round->status; // BETTING_OPEN, FLYING, CRASHED
+
+        $status = $round->status;
         $secondsRemaining = 0;
         $currentMultiplier = 1.00;
 
@@ -44,56 +50,52 @@ class CrashGameService
         } elseif ($status === 'CRASHED') {
             $endedTs = $round->ended_at ? $round->ended_at->timestamp : $nowTs;
             $elapsed = max(0, $nowTs - $endedTs);
-            $secondsRemaining = max(0, CrashRoundService::COUNTDOWN_SECONDS - $elapsed);
+            $secondsRemaining = max(0, 5 - $elapsed); // 5s post-crash screen before next round
+            $currentMultiplier = round((float)$round->crash_multiplier, 2);
         } elseif ($status === 'FLYING') {
             $startedTs = $round->started_at ? $round->started_at->timestamp : $nowTs;
             $elapsed = max(0, $nowTs - $startedTs);
             $currentMultiplier = min((float)$round->crash_multiplier, 1.00 + ($elapsed * 0.40));
         }
 
-        // Real user bets in active round
+        // Live real bets
         $dbBets = CrashBet::where('crash_round_id', $round->id)
             ->with('user')
             ->orderBy('id', 'desc')
             ->get();
 
         $liveBetsList = [];
-
         foreach ($dbBets as $b) {
             $liveBetsList[] = [
                 'id' => $b->id,
                 'username' => $b->user ? $b->user->name : 'User_' . $b->user_id,
-                'bet_amount' => number_format($b->bet_amount, 2),
-                'cashout_multiplier' => $b->cashout_multiplier ? number_format($b->cashout_multiplier, 2) : null,
-                'profit' => number_format($b->profit, 2),
-                'status' => $b->status, // flying, cashed_out, lost
+                'bet_amount' => round((float)$b->bet_amount, 2),
+                'auto_cashout' => $b->auto_cashout ? round((float)$b->auto_cashout, 2) : null,
+                'cashout_multiplier' => $b->cashout_multiplier ? round((float)$b->cashout_multiplier, 2) : null,
+                'profit' => round((float)$b->profit, 2),
+                'status' => $b->status,
             ];
         }
 
-        // Add simulated live multiplayer opponents for high-engagement dynamic UI
-        $bots = [
+        // Dedicated Crash Rocket Bots
+        $rocketBots = [
             ['name' => 'Rahul_VIP', 'bet' => 500, 'cashout_target' => 1.45],
             ['name' => 'CryptoKing', 'bet' => 1000, 'cashout_target' => 2.10],
             ['name' => 'Alex_Pro', 'bet' => 200, 'cashout_target' => 1.80],
             ['name' => 'Winner99', 'bet' => 100, 'cashout_target' => 3.20],
             ['name' => 'FastRunner', 'bet' => 50, 'cashout_target' => 1.25],
-            ['name' => 'Sonia_K', 'bet' => 300, 'cashout_target' => 2.50],
         ];
 
-        foreach ($bots as $index => $bot) {
+        foreach ($rocketBots as $index => $bot) {
             $botStatus = 'flying';
             $cashoutMult = null;
             $profit = 0.00;
 
-            if ($status === 'BETTING_OPEN') {
-                $botStatus = 'flying';
-            } elseif ($status === 'FLYING') {
+            if ($status === 'FLYING') {
                 if ($currentMultiplier >= $bot['cashout_target']) {
                     $botStatus = 'cashed_out';
                     $cashoutMult = number_format($bot['cashout_target'], 2);
                     $profit = number_format($bot['bet'] * ($bot['cashout_target'] - 1), 2);
-                } else {
-                    $botStatus = 'flying';
                 }
             } elseif ($status === 'CRASHED') {
                 $finalCrash = (float)$round->crash_multiplier;
@@ -107,29 +109,73 @@ class CrashGameService
             }
 
             $liveBetsList[] = [
-                'id' => 'BOT_' . ($index + 1),
+                'id' => 'BOT_ROCKET_' . ($index + 1),
                 'username' => $bot['name'],
                 'bet_amount' => number_format($bot['bet'], 2),
+                'auto_cashout' => number_format($bot['cashout_target'], 2),
                 'cashout_multiplier' => $cashoutMult,
                 'profit' => $profit,
                 'status' => $botStatus,
             ];
         }
 
-        // User specific bet in active round
         $userBet = null;
+        $myOrders = [];
+
         if ($user) {
-            $userBetModel = CrashBet::where('crash_round_id', $round->id)
-                ->where('user_id', $user->id)
+            // Find active flying bet for current round ONLY (exact match)
+            $userBetModel = CrashBet::where('user_id', $user->id)
+                ->where('status', 'flying')
+                ->where('crash_round_id', $round->id)
+                ->orderBy('id', 'desc')
                 ->first();
 
+            // If no flying bet for current round, check if user just cashed out this round
+            if (!$userBetModel) {
+                $userBetModel = CrashBet::where('user_id', $user->id)
+                    ->where('status', 'cashed_out')
+                    ->where('crash_round_id', $round->id)
+                    ->orderBy('id', 'desc')
+                    ->first();
+                // Only show as active bet if it's cashed_out (recent, not yet cleared)
+                if ($userBetModel && $round->status !== 'FLYING') {
+                    $userBetModel = null; // Clear stale cashed_out bet when round over
+                }
+            }
+
             if ($userBetModel) {
+                $liveProfit = round(($userBetModel->bet_amount * $currentMultiplier) - $userBetModel->bet_amount, 2);
+                $potentialWin = round($userBetModel->bet_amount * $currentMultiplier, 2);
+
                 $userBet = [
                     'id' => $userBetModel->id,
-                    'bet_amount' => number_format($userBetModel->bet_amount, 2),
-                    'cashout_multiplier' => $userBetModel->cashout_multiplier ? number_format($userBetModel->cashout_multiplier, 2) : null,
-                    'profit' => number_format($userBetModel->profit, 2),
+                    'round_id' => $userBetModel->round_id,
+                    'bet_amount' => round((float)$userBetModel->bet_amount, 2),
+                    'auto_cashout' => $userBetModel->auto_cashout ? round((float)$userBetModel->auto_cashout, 2) : null,
+                    'cashout_multiplier' => $userBetModel->cashout_multiplier ? round((float)$userBetModel->cashout_multiplier, 2) : null,
+                    'current_multiplier' => round($currentMultiplier, 2),
+                    'live_profit' => $liveProfit,
+                    'potential_payout' => $potentialWin,
+                    'profit' => round((float)$userBetModel->profit, 2),
                     'status' => $userBetModel->status,
+                ];
+            }
+
+            $myDbBets = CrashBet::where('user_id', $user->id)
+                ->orderBy('id', 'desc')
+                ->take(15)
+                ->get();
+
+            foreach ($myDbBets as $mb) {
+                $myOrders[] = [
+                    'id' => $mb->id,
+                    'round_id' => $mb->round_id,
+                    'bet_amount' => round((float)$mb->bet_amount, 2),
+                    'auto_cashout' => $mb->auto_cashout ? round((float)$mb->auto_cashout, 2) : '-',
+                    'cashout_multiplier' => $mb->cashout_multiplier ? round((float)$mb->cashout_multiplier, 2) : '-',
+                    'profit' => round((float)$mb->profit, 2),
+                    'status' => $mb->status,
+                    'time' => $mb->created_at ? $mb->created_at->format('H:i:s') : '',
                 ];
             }
         }
@@ -139,6 +185,7 @@ class CrashGameService
 
         return [
             'success' => true,
+            'game' => 'crash',
             'server_timestamp' => $now->timestamp,
             'round' => [
                 'id' => $round->id,
@@ -150,60 +197,96 @@ class CrashGameService
             'current_multiplier' => number_format($currentMultiplier, 2),
             'live_bets' => $liveBetsList,
             'user_bet' => $userBet,
+            'player' => [
+                'has_active_bet' => $userBet ? true : false,
+                'bet_id' => $userBet ? $userBet['id'] : null,
+                'bet_amount' => $userBet ? $userBet['bet_amount'] : 0,
+                'auto_cashout' => $userBet ? $userBet['auto_cashout'] : null,
+                'cashout_available' => $userBet ? ($userBet['status'] === 'flying' && $status === 'FLYING') : false,
+                'current_profit' => $userBet ? $userBet['live_profit'] : 0,
+                'potential_payout' => $userBet ? $userBet['potential_payout'] : 0,
+                'status' => $userBet ? $userBet['status'] : null,
+            ],
+            'my_orders' => $myOrders,
             'user_balance' => $userWallet ? number_format($userWallet->main_balance, 2) : '0.00',
             'history' => $history,
         ];
     }
 
     /**
-     * Place a bet on the current active round.
+     * Place bet on active Crash round with optional auto_cashout.
      */
-    public function placeBet(User $user, float $amount): array
+    public function placeBet(User $user, float $amount, ?float $autoCashout = null): array
     {
-        return DB::transaction(function () use ($user, $amount) {
+        return DB::transaction(function () use ($user, $amount, $autoCashout) {
             $round = $this->roundService->getOrSyncActiveRound();
+            $settings = CrashSetting::getSettings();
 
+            $targetRound = $round;
             if ($round->status !== 'BETTING_OPEN') {
-                throw new \Exception('Betting is closed for current round. Please wait for next round.');
+                $targetRound = CrashRound::where('status', 'BETTING_OPEN')
+                    ->where('id', '>', $round->id)
+                    ->orderBy('id', 'asc')
+                    ->first();
+                if (!$targetRound) {
+                    $targetRound = $this->roundService->createNewRound();
+                }
             }
 
-            // Check if user already placed bet in current round
-            $existing = CrashBet::where('crash_round_id', $round->id)
-                ->where('user_id', $user->id)
+            // Prevent duplicate active bets
+            $existingActive = CrashBet::where('user_id', $user->id)
+                ->where('status', 'flying')
                 ->first();
 
-            if ($existing) {
-                throw new \Exception('You have already placed a bet in this round.');
+            if ($existingActive) {
+                throw new \Exception("You already have an active bet placed for Round #{$existingActive->round_id}.");
             }
 
-            // Debit user wallet
+            if ($amount < $settings->min_bet || $amount > $settings->max_bet) {
+                throw new \Exception("Bet amount must be between ₹{$settings->min_bet} and ₹{$settings->max_bet}.");
+            }
+
+            if ($autoCashout !== null && ($autoCashout < 1.01 || $autoCashout > 500.00)) {
+                throw new \Exception('Auto cashout multiplier must be between 1.01x and 500.00x.');
+            }
+
+            // Debit via WalletService
             $this->walletService->debit(
                 $user->id,
                 $amount,
                 'main',
                 'bet',
-                "CRASH_{$round->round_id}",
-                "Bet on Crash Round #{$round->round_id}"
+                "CRASH_BET_{$targetRound->round_id}",
+                "CRASH_BET on Round #{$targetRound->round_id}"
             );
 
-            // Record Crash Bet
             $bet = CrashBet::create([
-                'crash_round_id' => $round->id,
-                'round_id' => $round->round_id,
+                'crash_round_id' => $targetRound->id,
+                'round_id' => $targetRound->round_id,
                 'user_id' => $user->id,
                 'bet_amount' => $amount,
+                'auto_cashout' => $autoCashout,
                 'status' => 'flying',
             ]);
 
             $newBalance = number_format($user->wallet->fresh()->main_balance, 2);
 
+            Cache::forget('crash_active_round');
+
+            $isNextRound = ($targetRound->id !== $round->id);
+            $msg = $isNextRound 
+                ? "Bet placed for NEXT round #{$targetRound->round_id}!" 
+                : 'Crash bet placed successfully!';
+
             return [
                 'success' => true,
-                'message' => 'Bet placed successfully!',
+                'message' => $msg,
                 'new_balance' => $newBalance,
                 'bet' => [
                     'id' => $bet->id,
-                    'bet_amount' => number_format($bet->bet_amount, 2),
+                    'round_id' => $bet->round_id,
+                    'bet_amount' => round((float)$bet->bet_amount, 2),
+                    'auto_cashout' => $bet->auto_cashout ? round((float)$bet->auto_cashout, 2) : null,
                     'status' => $bet->status,
                 ],
             ];
@@ -211,36 +294,75 @@ class CrashGameService
     }
 
     /**
-     * Cash out an active user bet.
+     * Cash out active Crash bet.
      */
     public function processCashout(User $user, int $betId, float $clientMult): array
     {
         return DB::transaction(function () use ($user, $betId, $clientMult) {
-            $round = $this->roundService->getOrSyncActiveRound();
+            // First sync active round to ensure status and started_at timestamps are 100% current
+            $activeRound = $this->roundService->getOrSyncActiveRound();
 
-            if ($round->status !== 'FLYING') {
-                throw new \Exception('Cannot cash out: Round is not flying.');
-            }
-
+            // Fetch the bet
             $bet = CrashBet::where('user_id', $user->id)
                 ->where('id', $betId)
                 ->firstOrFail();
 
             if ($bet->status !== 'flying') {
-                throw new \Exception('Bet is already settled.');
+                if ($bet->status === 'cashed_out') {
+                    // Bet was already cashed out (auto-cashout or race condition) — return success
+                    $effectiveMult = (float)($bet->cashout_multiplier ?: 1.00);
+                    $winAmount = round($bet->bet_amount * $effectiveMult, 2);
+                    $newBalance = number_format($user->wallet->fresh()->main_balance, 2);
+                    return [
+                        'success' => true,
+                        'already_cashed' => true,
+                        'message' => 'Cashed out +₹' . number_format($winAmount, 2) . ' (' . number_format($effectiveMult, 2) . 'x) successfully!',
+                        'win_amount' => number_format($winAmount, 2),
+                        'multiplier' => number_format($effectiveMult, 2),
+                        'new_balance' => $newBalance,
+                    ];
+                }
+                if ($bet->status === 'lost') {
+                    throw new \Exception('The rocket already crashed — bet was lost.');
+                }
+                throw new \Exception('Bet is already settled (status: ' . $bet->status . ').');
             }
 
-            // Calculate current server multiplier based on flight time
-            $elapsedMs = Carbon::now()->diffInMilliseconds($round->started_at);
-            $serverMultiplier = min((float)$round->crash_multiplier, 1.00 + ($elapsedMs / 1000) * 0.40);
+            // Load the round directly from the bet
+            $round = CrashRound::find($bet->crash_round_id);
+            if (!$round) {
+                throw new \Exception('Round not found.');
+            }
 
-            // Verify server multiplier didn't already crash
+            if ($round->status !== 'FLYING') {
+                if ($round->status === 'CRASHED') {
+                    // Round just crashed — mark bet as lost if still flying
+                    $bet->update(['status' => 'lost', 'profit' => 0.00]);
+                    throw new \Exception('The rocket has crashed. Better luck next round!');
+                }
+                throw new \Exception('Flight has not launched yet — please wait for launch.');
+            }
+
+            // Re-fetch round with a fresh DB query to get latest started_at
+            $round->refresh();
+
+            $flightStartedTs = $round->started_at ? $round->started_at->timestamp : time();
+            $elapsedSec = max(0, time() - $flightStartedTs);
+            $serverMultiplier = max(1.00, min((float)$round->crash_multiplier, 1.00 + ($elapsedSec * 0.40)));
+
+            // If server multiplier has reached/exceeded crash point, the round just ended
             if ($serverMultiplier >= (float)$round->crash_multiplier) {
-                $bet->update(['status' => 'lost', 'profit' => 0.00]);
-                throw new \Exception('Round crashed before cash out could be processed!');
+                // Double-check round status from DB
+                $round->refresh();
+                if ($round->status === 'CRASHED') {
+                    $bet->update(['status' => 'lost', 'profit' => 0.00]);
+                    throw new \Exception('The rocket crashed just before your cashout!');
+                }
+                // Still flying — use crash_multiplier as effective payout
+                $serverMultiplier = (float)$round->crash_multiplier * 0.995; // 0.5% safety margin
             }
 
-            $effectiveMult = min($serverMultiplier, $clientMult);
+            $effectiveMult = max(1.00, min($serverMultiplier, max(1.00, $clientMult)));
             $winAmount = round($bet->bet_amount * $effectiveMult, 2);
             $profit = round($winAmount - $bet->bet_amount, 2);
 
@@ -250,21 +372,23 @@ class CrashGameService
                 'status' => 'cashed_out',
             ]);
 
-            // Credit wallet
+            // Credit wallet via WalletService
             $this->walletService->credit(
                 $user->id,
                 $winAmount,
                 'main',
                 'win',
-                "CRASH_WIN_{$bet->id}",
-                "Crash Win @ {$effectiveMult}x on Round #{$round->round_id}"
+                "CRASH_CASHOUT_{$bet->id}",
+                "CRASH_CASHOUT @ {$effectiveMult}x on Round #{$round->round_id}"
             );
 
             $newBalance = number_format($user->wallet->fresh()->main_balance, 2);
 
+            Cache::forget('crash_active_round');
+
             return [
                 'success' => true,
-                'message' => "Cashed out +₹{$winAmount} successfully!",
+                'message' => 'Cashed out +₹' . number_format($winAmount, 2) . ' (' . number_format($effectiveMult, 2) . 'x) successfully!',
                 'win_amount' => number_format($winAmount, 2),
                 'multiplier' => number_format($effectiveMult, 2),
                 'new_balance' => $newBalance,

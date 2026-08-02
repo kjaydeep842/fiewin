@@ -7,6 +7,7 @@ use App\Models\Game;
 use App\Models\GameBet;
 use App\Models\GameResult;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -33,6 +34,14 @@ class GameEngineService
 
             if ($existingResult && $existingResult->status === 'settled') {
                 return $existingResult;
+            }
+
+            // Check cache for manual admin override if not explicitly passed
+            if ($manualOverrideNumber === null) {
+                $cacheKey = ($game->code === 'fast_parity') ? 'override_fast_parity' : 'override_parity';
+                if (Cache::has($cacheKey)) {
+                    $manualOverrideNumber = (int)Cache::get($cacheKey);
+                }
             }
 
             $pendingBets = GameBet::where('game_id', $game->id)

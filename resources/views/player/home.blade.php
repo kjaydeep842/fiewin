@@ -1,19 +1,36 @@
 @extends('layouts.app')
 
 @section('content')
-<!-- Floating Wallet Card -->
-<div class="gh-card p-3 mb-3" style="background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%); color: #ffffff;">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <div>
-            <span class="small opacity-75 d-block" style="font-size: 0.72rem;">TOTAL BALANCE</span>
-            <h3 class="fw-bold mb-0 font-monospace">₹{{ number_format(auth()->user()->wallet?->total_balance ?? 0, 2) }}</h3>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="{{ route('wallet.index') }}" class="btn btn-light btn-sm fw-bold rounded-pill px-3 shadow-sm text-primary">DEPOSIT</a>
-            <a href="{{ route('wallet.index') }}" class="btn btn-outline-light btn-sm fw-bold rounded-pill px-3">WITHDRAW</a>
+<!-- Wallet Balance Card — fully responsive -->
+<div class="gh-card mb-3"
+     style="background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%); color:#fff; border-radius:16px; overflow:hidden;">
+
+    {{-- Top row: label + balance --}}
+    <div class="px-3 pt-3 pb-2">
+        <span class="d-block opacity-75" style="font-size:0.68rem; letter-spacing:0.06em; font-weight:600;">TOTAL BALANCE</span>
+        <div class="d-flex align-items-baseline gap-2 flex-wrap">
+            <span class="fw-bold font-monospace"
+                  style="font-size: clamp(1.15rem, 5vw, 1.75rem); letter-spacing:-0.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;">
+                ₹{{ number_format(auth()->user()->wallet?->total_balance ?? 0, 2) }}
+            </span>
         </div>
     </div>
+
+    {{-- Bottom row: two equal full-width buttons --}}
+    <div class="d-flex border-top border-white border-opacity-25">
+        <a href="{{ route('wallet.index') }}"
+           class="flex-fill text-center py-2 fw-bold text-white text-decoration-none"
+           style="font-size:0.82rem; background:rgba(255,255,255,0.18); border-right:1px solid rgba(255,255,255,0.2); letter-spacing:0.04em;">
+            <i class="bi bi-plus-circle me-1"></i>DEPOSIT
+        </a>
+        <a href="{{ route('wallet.index') }}"
+           class="flex-fill text-center py-2 fw-bold text-white text-decoration-none"
+           style="font-size:0.82rem; background:rgba(255,255,255,0.08); letter-spacing:0.04em;">
+            <i class="bi bi-arrow-up-circle me-1"></i>WITHDRAW
+        </a>
+    </div>
 </div>
+
 
 <!-- Image Hero Slider Carousel -->
 <div id="homeHeroCarousel" class="carousel slide mb-3" data-bs-ride="carousel">
@@ -43,31 +60,65 @@
 
 <!-- 4-Column Quick Reward Buttons Grid -->
 <div class="row g-2 mb-3 text-center">
+    <style>
+        .quick-action-btn {
+            padding: 10px 4px 8px 4px !important;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            text-decoration: none;
+            color: #1a1a1a;
+        }
+        .quick-action-btn .qa-icon {
+            font-size: 1.4rem;
+            line-height: 1;
+            display: block;
+        }
+        .quick-action-btn .qa-label {
+            font-size: 0.62rem;
+            font-weight: 600;
+            line-height: 1.1;
+            white-space: nowrap;
+            display: block;
+            letter-spacing: -0.01em;
+        }
+        @media (max-width: 360px) {
+            .quick-action-btn .qa-label {
+                font-size: 0.56rem;
+            }
+            .quick-action-btn .qa-icon {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
     <div class="col-3">
-        <a href="{{ route('promotion.index') }}" class="gh-card p-2 text-decoration-none d-block text-dark">
-            <div class="fs-4 text-warning mb-1"><i class="bi bi-calendar-check-fill"></i></div>
-            <div class="fw-semibold small" style="font-size: 0.7rem;">Daily Check-in</div>
+        <a href="{{ route('promotion.index') }}" class="gh-card quick-action-btn">
+            <span class="qa-icon text-warning"><i class="bi bi-calendar-check-fill"></i></span>
+            <span class="qa-label">Daily Check-in</span>
         </a>
     </div>
     <div class="col-3">
-        <a href="{{ route('promotion.index') }}" class="gh-card p-2 text-decoration-none d-block text-dark">
-            <div class="fs-4 text-success mb-1"><i class="bi bi-award-fill"></i></div>
-            <div class="fw-semibold small" style="font-size: 0.7rem;">Task Reward</div>
+        <a href="{{ route('promotion.index') }}" class="gh-card quick-action-btn">
+            <span class="qa-icon text-success"><i class="bi bi-award-fill"></i></span>
+            <span class="qa-label">Task Reward</span>
         </a>
     </div>
     <div class="col-3">
-        <a href="{{ route('referral.index') }}" class="gh-card p-2 text-decoration-none d-block text-dark">
-            <div class="fs-4 text-primary mb-1"><i class="bi bi-people-fill"></i></div>
-            <div class="fw-semibold small" style="font-size: 0.7rem;">Invite Earn</div>
+        <a href="{{ route('referral.index') }}" class="gh-card quick-action-btn">
+            <span class="qa-icon text-primary"><i class="bi bi-people-fill"></i></span>
+            <span class="qa-label">Invite Earn</span>
         </a>
     </div>
     <div class="col-3">
-        <a href="{{ route('wallet.index') }}" class="gh-card p-2 text-decoration-none d-block text-dark">
-            <div class="fs-4 text-danger mb-1"><i class="bi bi-wallet2"></i></div>
-            <div class="fw-semibold small" style="font-size: 0.7rem;">Recharge</div>
+        <a href="{{ route('wallet.index') }}" class="gh-card quick-action-btn">
+            <span class="qa-icon text-danger"><i class="bi bi-wallet2"></i></span>
+            <span class="qa-label">Recharge</span>
         </a>
     </div>
 </div>
+
 
 {{-- 2-Column Responsive Games Grid (dynamic — all active games) --}}
 <div class="d-flex justify-content-between align-items-center mb-2">

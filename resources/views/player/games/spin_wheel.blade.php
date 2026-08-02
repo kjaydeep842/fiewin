@@ -24,12 +24,12 @@
     <div class="d-flex justify-content-center gap-2 flex-wrap mb-3">
         @php
         $sectors = [
-            ['label' => '2X',  'color' => '#6366f1'],
-            ['label' => '5X',  'color' => '#22C55E'],
-            ['label' => '10X', 'color' => '#EAB308'],
-            ['label' => '0X',  'color' => '#EF4444'],
-            ['label' => '3X',  'color' => '#D946EF'],
-            ['label' => '50X', 'color' => '#06B6D4'],
+            ['label' => '2X',  'color' => '#6366f1', 'mult' => 2],
+            ['label' => '5X',  'color' => '#22C55E', 'mult' => 5],
+            ['label' => '10X', 'color' => '#EAB308', 'mult' => 10],
+            ['label' => '0X',  'color' => '#EF4444', 'mult' => 0],
+            ['label' => '3X',  'color' => '#D946EF', 'mult' => 3],
+            ['label' => '50X', 'color' => '#06B6D4', 'mult' => 50],
         ];
         @endphp
         @foreach($sectors as $s)
@@ -37,16 +37,15 @@
         @endforeach
     </div>
 
-    {{-- Wheel Canvas --}}
-    <div class="position-relative d-inline-block mb-3">
-        {{-- Pointer --}}
-        <div class="position-absolute top-0 start-50 translate-middle-x text-warning"
-             style="font-size: 1.6rem; margin-top: -12px; z-index: 3; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));">
-            <i class="bi bi-caret-down-fill"></i>
+    {{-- Wheel Canvas + Pointer --}}
+    <div class="position-relative d-inline-block mb-3" style="width:280px; max-width:100%;">
+        {{-- Pointer arrow at TOP center --}}
+        <div class="position-absolute text-warning"
+             style="top:-10px; left:50%; transform:translateX(-50%); font-size:1.8rem; z-index:5; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.4)); line-height:1;">
+            ▼
         </div>
         <canvas id="wheelCanvas" width="280" height="280"
-                class="rounded-circle shadow"
-                style="border: 4px solid #EAB308; display: block; max-width: 100%; height: auto; margin: 0 auto;"></canvas>
+                style="border-radius:50%; border:4px solid #EAB308; display:block; max-width:100%; height:auto; margin:0 auto; box-shadow:0 8px 32px rgba(0,0,0,0.18);"></canvas>
     </div>
 
     {{-- Result display --}}
@@ -59,7 +58,7 @@
         <small class="text-secondary fw-semibold d-block mb-2" style="font-size: 0.72rem;">BET AMOUNT (₹)</small>
         <div class="d-flex gap-2 justify-content-center flex-wrap mb-2">
             @foreach([10, 50, 100, 500, 1000] as $p)
-            <button onclick="document.getElementById('spinBetAmount').value={{ $p }}"
+            <button onclick="document.getElementById('spinBetAmount').value={{ $p }}; updatePreview();"
                     class="btn btn-outline-primary btn-sm rounded-pill px-3"
                     style="font-size: 0.78rem;">₹{{ $p }}</button>
             @endforeach
@@ -184,8 +183,11 @@
     const spinWinModal  = new bootstrap.Modal(document.getElementById('spinWinModal'));
     const spinLossModal = new bootstrap.Modal(document.getElementById('spinLossModal'));
 
-    // ── Wheel Config ──────────────────────────────────────────────────────────
-    const sectors = [
+    // ──────────────────────────────────────────────────────────────────────────
+    // SECTOR DEFINITIONS — order matches drawing order (clockwise from top)
+    // Pointer is at TOP of the canvas = angle -π/2 (270°)
+    // ──────────────────────────────────────────────────────────────────────────
+    const SECTORS = [
         { label: '2X',  color: '#6366f1', mult: 2  },
         { label: '5X',  color: '#22C55E', mult: 5  },
         { label: '10X', color: '#EAB308', mult: 10 },
@@ -193,72 +195,148 @@
         { label: '3X',  color: '#D946EF', mult: 3  },
         { label: '50X', color: '#06B6D4', mult: 50 },
     ];
+    const NUM_SECTORS  = SECTORS.length;
+    const ARC          = (2 * Math.PI) / NUM_SECTORS;  // 60° per sector
 
-    const canvas     = document.getElementById('wheelCanvas');
-    const ctx        = canvas.getContext('2d');
-    const CX         = canvas.width  / 2;
-    const CY         = canvas.height / 2;
-    const RADIUS     = CX - 6;
-    let   currentAngle = 0;
-    let   activeBetId  = null;
-    let   isSpinning   = false;
+    // Canvas setup
+    const canvas   = document.getElementById('wheelCanvas');
+    const ctx      = canvas.getContext('2d');
+    const CX       = canvas.width  / 2;
+    const CY       = canvas.height / 2;
+    const RADIUS   = CX - 6;
 
-    function drawWheel(angle) {
-        const arc = (2 * Math.PI) / sectors.length;
+    // The "zero" rotation offset so sector 0 starts right under pointer (top).
+    // Pointer is at -π/2. Sector 0 centre should be at -π/2.
+    // Sector i occupies [rotOffset + i*ARC, rotOffset + (i+1)*ARC].
+    // Centre of sector i = rotOffset + i*ARC + ARC/2.
+    // For sector 0 centre to be at -π/2: rotOffset + ARC/2 = -π/2
+    //   => rotOffset = -π/2 - ARC/2
+    const POINTER_ANGLE = -Math.PI / 2;  // top of canvas
+
+    let   rotationAngle = 0;  // current wheel rotation (accumulated)
+    let   activeBetId   = null;
+    let   isSpinning    = false;
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // drawWheel: draws the wheel rotated by `rotation` radians
+    // ──────────────────────────────────────────────────────────────────────────
+    function drawWheel(rotation) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        sectors.forEach((s, i) => {
-            const start = angle + i * arc;
-            const end   = start + arc;
+        SECTORS.forEach((s, i) => {
+            // Each sector starts at POINTER_ANGLE - ARC/2 + i*ARC + rotation
+            // This puts sector 0 centre exactly at pointer when rotation=0
+            const startAngle = POINTER_ANGLE - ARC / 2 + i * ARC + rotation;
+            const endAngle   = startAngle + ARC;
 
             // Sector fill
             ctx.beginPath();
             ctx.moveTo(CX, CY);
-            ctx.arc(CX, CY, RADIUS, start, end);
+            ctx.arc(CX, CY, RADIUS, startAngle, endAngle);
             ctx.closePath();
             ctx.fillStyle = s.color;
             ctx.fill();
 
-            // Sector border
-            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-            ctx.lineWidth   = 2;
+            // White border
+            ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+            ctx.lineWidth   = 2.5;
             ctx.stroke();
 
-            // Label
+            // Label text (positioned at sector midpoint)
+            const midAngle = startAngle + ARC / 2;
+            const textR    = RADIUS * 0.68;
+            const tx       = CX + textR * Math.cos(midAngle);
+            const ty       = CY + textR * Math.sin(midAngle);
+
             ctx.save();
-            ctx.translate(CX, CY);
-            ctx.rotate(start + arc / 2);
-            ctx.textAlign    = 'right';
+            ctx.translate(tx, ty);
+            ctx.rotate(midAngle + Math.PI / 2);
+            ctx.textAlign    = 'center';
+            ctx.textBaseline = 'middle';
             ctx.fillStyle    = '#fff';
-            ctx.font         = 'bold 17px system-ui, sans-serif';
-            ctx.shadowColor  = 'rgba(0,0,0,0.35)';
-            ctx.shadowBlur   = 4;
-            ctx.fillText(s.label, RADIUS - 10, 6);
+            ctx.font         = 'bold 16px system-ui, sans-serif';
+            ctx.shadowColor  = 'rgba(0,0,0,0.45)';
+            ctx.shadowBlur   = 5;
+            ctx.fillText(s.label, 0, 0);
             ctx.restore();
         });
 
         // Centre circle
         ctx.beginPath();
-        ctx.arc(CX, CY, 18, 0, 2 * Math.PI);
+        ctx.arc(CX, CY, 16, 0, 2 * Math.PI);
         ctx.fillStyle   = '#fff';
-        ctx.shadowColor = 'rgba(0,0,0,0.2)';
-        ctx.shadowBlur  = 8;
+        ctx.shadowColor = 'rgba(0,0,0,0.25)';
+        ctx.shadowBlur  = 10;
         ctx.fill();
         ctx.shadowBlur  = 0;
+        ctx.strokeStyle = '#EAB308';
+        ctx.lineWidth   = 3;
+        ctx.stroke();
     }
 
-    drawWheel(currentAngle);
+    // Initial draw
+    drawWheel(rotationAngle);
 
-    // Live payout preview
+    // ──────────────────────────────────────────────────────────────────────────
+    // computeTargetRotation:
+    //   Given the winning sector index, compute the exact final rotation so
+    //   the pointer (at POINTER_ANGLE = -π/2) lands exactly on the sector centre.
+    //
+    //   Sector i centre at rotation R = POINTER_ANGLE - ARC/2 + i*ARC + R + ARC/2
+    //                                 = POINTER_ANGLE + i*ARC + R
+    //   We want sector centre == POINTER_ANGLE:
+    //     POINTER_ANGLE + i*ARC + R = POINTER_ANGLE  (mod 2π)
+    //     R = -i*ARC  (mod 2π)
+    //
+    //   We add full 360° spins for drama, and a small random offset within
+    //   the sector so it doesn't always land perfectly centred (feels real).
+    // ──────────────────────────────────────────────────────────────────────────
+    function computeTargetRotation(winnerIdx) {
+        const jitter         = (Math.random() - 0.5) * ARC * 0.35; // ±17.5% of sector width
+        const sectorRotation = -winnerIdx * ARC + jitter;           // raw rotation to land on sector
+        const fullSpins      = (5 + Math.floor(Math.random() * 4)) * 2 * Math.PI; // 5-8 full spins
+
+        // Normalise current angle to [0, 2π)
+        const curNorm = ((rotationAngle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+
+        // Target must be > current (spin forward), normalised to same base
+        const rawTarget = ((sectorRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+        const diff      = (rawTarget - curNorm + 2 * Math.PI) % (2 * Math.PI);
+
+        return rotationAngle + fullSpins + diff;
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // getSectorAtPointer: read which sector is under the pointer at given rotation
+    // ──────────────────────────────────────────────────────────────────────────
+    function getSectorAtPointer(rotation) {
+        // Pointer is at POINTER_ANGLE (-π/2).
+        // Sector i start angle = POINTER_ANGLE - ARC/2 + i*ARC + rotation
+        // Find which sector contains POINTER_ANGLE:
+        //   POINTER_ANGLE - ARC/2 + i*ARC + rotation ≤ POINTER_ANGLE < POINTER_ANGLE - ARC/2 + (i+1)*ARC + rotation
+        //   Simplifying: -ARC/2 + i*ARC + rotation ≤ 0 < ARC/2 + i*ARC + rotation
+        //
+        // Easier: offset = (POINTER_ANGLE - (POINTER_ANGLE - ARC/2 + rotation)) / ARC
+        //                = (ARC/2 - rotation) / ARC
+        const offset = ((ARC / 2 - rotation) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+        const idx    = Math.floor(offset / ARC) % NUM_SECTORS;
+        return idx;
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // updatePreview
+    // ──────────────────────────────────────────────────────────────────────────
     function updatePreview() {
         const bet = parseFloat(document.getElementById('spinBetAmount').value) || 0;
         document.getElementById('previewBet').innerText = '₹' + bet.toFixed(2);
-        document.getElementById('previewMax').innerText = '₹' + (bet * 50).toFixed(2);
+        document.getElementById('previewMax').innerText = '₹' + (bet * 50).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
     }
     document.getElementById('spinBetAmount').addEventListener('input', updatePreview);
     updatePreview();
 
-    // ── Spin ─────────────────────────────────────────────────────────────────
+    // ──────────────────────────────────────────────────────────────────────────
+    // MAIN SPIN
+    // ──────────────────────────────────────────────────────────────────────────
     async function spinWheel() {
         if (isSpinning) return;
 
@@ -271,16 +349,20 @@
             return;
         }
 
-        const btn = document.getElementById('spinBtn');
-        isSpinning    = true;
-        btn.disabled  = true;
+        const btn    = document.getElementById('spinBtn');
+        isSpinning   = true;
+        btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>SPINNING...';
 
-        // Reset result banner
-        const banner = document.getElementById('spinResultBanner');
-        banner.classList.add('d-none');
+        // Hide old result
+        document.getElementById('spinResultBanner').classList.add('d-none');
 
-        // Place bet (deduct balance)
+        // Step 1: Pick winner sector HERE on frontend deterministically
+        //         (server will validate/override the multiplier server-side)
+        const winnerIdx    = Math.floor(Math.random() * NUM_SECTORS);
+        const winnerSector = SECTORS[winnerIdx];
+
+        // Step 2: Place bet
         const formData = new FormData();
         formData.append('game_id',      "{{ $game->id }}");
         formData.append('period_number', 'SPIN_' + Date.now());
@@ -304,28 +386,29 @@
             activeBetId = data.bet.id;
             updateTopWalletBalance(data.new_balance);
 
-            // Pick a sector randomly
-            const sectorIdx      = Math.floor(Math.random() * sectors.length);
-            const selectedSector = sectors[sectorIdx];
+            // Step 3: Animate wheel to winner sector
+            const targetRotation = computeTargetRotation(winnerIdx);
+            const startRotation  = rotationAngle;
+            const startTime      = performance.now();
+            const DURATION       = 3500; // ms
 
-            // Animate wheel
-            const totalSpins  = 5 + Math.random() * 3;
-            const arcPerSector = (2 * Math.PI) / sectors.length;
-            const targetOffset = -(sectorIdx + 0.5) * arcPerSector; // land pointer on sector centre
-            const targetAngle  = currentAngle + totalSpins * 2 * Math.PI + targetOffset;
-            const startTime    = performance.now();
-            const DURATION     = 3200; // ms
+            function easeOut(t) {
+                // Cubic ease-out for smooth deceleration
+                return 1 - Math.pow(1 - t, 3);
+            }
 
-            function easeOut(t) { return 1 - Math.pow(1 - t, 4); }
+            let lastTickAngle = startRotation;
 
-            let lastTickAngle = currentAngle;
             function animate(now) {
                 const elapsed  = now - startTime;
                 const progress = Math.min(elapsed / DURATION, 1);
-                const angle    = currentAngle + (targetAngle - currentAngle) * easeOut(progress);
+                const eased    = easeOut(progress);
+                const angle    = startRotation + (targetRotation - startRotation) * eased;
+
                 drawWheel(angle);
 
-                if (Math.abs(angle - lastTickAngle) > 0.35) {
+                // Tick sound
+                if (Math.abs(angle - lastTickAngle) > 0.3) {
                     if (window.soundManager) window.soundManager.play('wheelTick');
                     lastTickAngle = angle;
                 }
@@ -333,9 +416,16 @@
                 if (progress < 1) {
                     requestAnimationFrame(animate);
                 } else {
-                    currentAngle = ((targetAngle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-                    drawWheel(currentAngle);
-                    settleResult(selectedSector, btn);
+                    // Snap to exact final angle
+                    rotationAngle = targetRotation;
+                    drawWheel(rotationAngle);
+
+                    // Verify which sector is actually under pointer
+                    const actualIdx    = getSectorAtPointer(rotationAngle);
+                    const actualSector = SECTORS[actualIdx];
+
+                    // Step 4: Settle with the ACTUAL sector under pointer
+                    settleResult(actualSector, btn);
                 }
             }
 
@@ -348,10 +438,12 @@
         }
     }
 
-    // ── Settle ────────────────────────────────────────────────────────────────
+    // ──────────────────────────────────────────────────────────────────────────
+    // SETTLE — sends result to server
+    // ──────────────────────────────────────────────────────────────────────────
     async function settleResult(sector, btn) {
         const formData = new FormData();
-        formData.append('bet_id',    activeBetId);
+        formData.append('bet_id',     activeBetId);
         formData.append('multiplier', sector.mult);
 
         try {
@@ -365,13 +457,14 @@
             if (data.success) {
                 updateTopWalletBalance(data.new_balance);
 
-                // Show result banner on wheel card
+                // Show result banner
                 const banner  = document.getElementById('spinResultBanner');
                 const bannerT = document.getElementById('spinResultText');
-                const won = sector.mult > 0;
+                const won     = sector.mult > 0;
 
                 banner.classList.remove('d-none');
-                bannerT.className = 'badge fs-6 px-4 py-2 rounded-pill ' + (won ? 'bg-success gh-glow-success' : 'bg-danger gh-red-alert-pulse');
+                bannerT.className = 'badge fs-6 px-4 py-2 rounded-pill ' +
+                    (won ? 'bg-success' : 'bg-danger');
                 bannerT.innerText = won
                     ? `🎉 ${sector.label} — +₹${data.win_amount}`
                     : `💥 ${sector.label} — Better Luck Next Time!`;
@@ -387,10 +480,10 @@
                     if (window.animationManager) window.animationManager.shakeScreen();
                 }
 
-                // Prepend to history table
+                // Prepend history row
                 prependHistoryRow(sector, data);
 
-                // Show modal
+                // Show correct modal
                 if (won) {
                     document.getElementById('spinWinMult').innerText   = sector.label;
                     document.getElementById('spinWinAmount').innerText = '+₹' + data.win_amount;
@@ -398,23 +491,26 @@
                 } else {
                     spinLossModal.show();
                 }
+            } else {
+                alert(data.message || 'Settlement error.');
             }
         } catch (err) {
-            console.error(err);
+            console.error('Settle error:', err);
+            alert('Settlement network error. Please contact support.');
         } finally {
             resetBtn(btn);
         }
     }
 
+    // ──────────────────────────────────────────────────────────────────────────
     function prependHistoryRow(sector, settle) {
         const tbody = document.getElementById('spinHistoryBody');
         const now   = new Date().toLocaleTimeString('en-GB', { hour12: false });
         const bet   = parseFloat(document.getElementById('spinBetAmount').value);
         const won   = sector.mult > 0;
 
-        // Determine badge colour
         const bgMap = { 50: '#06B6D4', 10: '#EAB308', 5: '#22C55E', 3: '#D946EF', 2: '#6366f1', 0: '#EF4444' };
-        const color = bgMap[sector.mult] || '#6c757d';
+        const color = bgMap[sector.mult] ?? '#6c757d';
 
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -440,11 +536,6 @@
     function updateTopWalletBalance(balStr) {
         const topEl = document.getElementById('topWalletBalance');
         if (topEl) topEl.innerText = '₹' + balStr;
-        document.querySelectorAll('.font-monospace').forEach(el => {
-            if (el !== topEl && el.innerText.includes('₹') && /₹[\d,]+/.test(el.innerText)) {
-                el.innerText = '₹' + balStr;
-            }
-        });
     }
 </script>
 @endpush

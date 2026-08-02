@@ -25,6 +25,7 @@ $badgeMap = [
     'jet'         => ['HOT',  'bg-danger'],
     'spin_wheel'  => ['50X',  'bg-info text-dark'],
     'dice'        => ['5.5X', 'bg-success'],
+    'andar_bahar' => ['HOT',  'bg-primary'],
 ];
 $iconColorMap = [
     'fast_parity' => 'text-success',
@@ -34,6 +35,7 @@ $iconColorMap = [
     'jet'         => 'text-danger',
     'spin_wheel'  => 'text-info',
     'dice'        => 'text-primary',
+    'andar_bahar' => 'text-info',
 ];
 @endphp
 

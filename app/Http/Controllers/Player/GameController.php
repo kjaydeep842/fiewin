@@ -13,6 +13,7 @@ use App\Services\GameEngineService;
 use App\Services\MineGameService;
 use App\Services\WalletService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class GameController extends Controller
 {
@@ -68,9 +69,10 @@ class GameController extends Controller
             }
 
             $history = GameResult::where('game_id', $game->id)->where('status', 'settled')->orderBy('id', 'desc')->take(20)->get();
+            $lastResult = $history->first();
             $myBets = GameBet::where('user_id', $user->id)->where('game_id', $game->id)->orderBy('id', 'desc')->take(15)->get();
 
-            return view('player.games.fast_parity', compact('game', 'currentPeriod', 'secondsInterval', 'history', 'myBets'));
+            return view('player.games.fast_parity', compact('game', 'currentPeriod', 'secondsInterval', 'history', 'lastResult', 'myBets'));
         }
 
         if ($code === 'mines') {
@@ -78,14 +80,21 @@ class GameController extends Controller
             return view('player.games.mines', compact('game', 'myBets'));
         }
 
-        if ($code === 'crash' || $code === 'jet') {
-            $myBets = GameBet::where('user_id', $user->id)->where('game_id', $game->id)->orderBy('id', 'desc')->take(10)->get();
-            return view('player.games.crash', compact('game', 'myBets'));
+        if ($code === 'jet') {
+            return redirect()->route('games.jet.show');
+        }
+
+        if ($code === 'crash') {
+            return redirect()->route('games.crash.show');
         }
 
         if ($code === 'spin_wheel') {
             $myBets = GameBet::where('user_id', $user->id)->where('game_id', $game->id)->orderBy('id', 'desc')->take(10)->get();
             return view('player.games.spin_wheel', compact('game', 'myBets'));
+        }
+
+        if ($code === 'andar_bahar' || $code === 'andar-bahar') {
+            return redirect()->route('games.andar-bahar.show');
         }
 
         if ($code === 'dice') {
@@ -132,17 +141,11 @@ class GameController extends Controller
         // Always settle previous period if not settled
         $this->gameEngine->settleFastParityPeriod($game, $previousPeriod);
 
-        // Get previous period result
+        // Get latest settled period result
         $lastResult = GameResult::where('game_id', $game->id)
-            ->where('period_number', $previousPeriod)
+            ->where('status', 'settled')
+            ->orderBy('id', 'desc')
             ->first();
-
-        if (!$lastResult) {
-            $lastResult = GameResult::where('game_id', $game->id)
-                ->where('status', 'settled')
-                ->orderBy('id', 'desc')
-                ->first();
-        }
 
         // Get user's latest settled bet
         $userLatestSettledBet = GameBet::where('user_id', $user->id)
@@ -238,9 +241,11 @@ class GameController extends Controller
         $user = auth()->user();
         $game = Game::findOrFail($request->game_id);
 
+        $isJsonRequest = $request->expectsJson() || $request->ajax() || $request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest';
+
         if ($request->bet_amount < $game->min_entry_fee || $request->bet_amount > $game->max_entry_fee) {
             $msg = "Bet amount must be between Rs {$game->min_entry_fee} and Rs {$game->max_entry_fee}";
-            if ($request->ajax() || $request->wantsJson()) {
+            if ($isJsonRequest) {
                 return response()->json(['success' => false, 'message' => $msg], 422);
             }
             return back()->with('error', $msg);
@@ -269,7 +274,7 @@ class GameController extends Controller
 
             $newBalance = number_format($user->wallet->fresh()->main_balance, 2);
 
-            if ($request->ajax() || $request->wantsJson()) {
+            if ($isJsonRequest) {
                 return response()->json([
                     'success' => true,
                     'message' => "Bet placed successfully on " . strtoupper($request->bet_type) . "!",
@@ -280,7 +285,7 @@ class GameController extends Controller
 
             return back()->with('success', "Bet placed successfully on {$request->bet_type}!");
         } catch (\Exception $e) {
-            if ($request->ajax() || $request->wantsJson()) {
+            if ($isJsonRequest) {
                 return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
             }
             return back()->with('error', $e->getMessage());
@@ -436,11 +441,15 @@ class GameController extends Controller
             return response()->json(['success' => false, 'message' => 'Bet already settled'], 400);
         }
 
-        $winAmount = round($bet->bet_amount * $request->multiplier, 2);
+        // Check if admin set a manual multiplier override
+        $override = Cache::get('override_spin_wheel');
+        $multiplier = ($override !== null) ? (float)$override : (float)$request->multiplier;
+
+        $winAmount = round($bet->bet_amount * $multiplier, 2);
         if ($winAmount > 0) {
             $bet->update([
                 'win_amount' => $winAmount,
-                'multiplier' => $request->multiplier,
+                'multiplier' => $multiplier,
                 'status' => 'won',
             ]);
 
@@ -450,7 +459,7 @@ class GameController extends Controller
                 'main',
                 'win',
                 "SPIN_WIN_{$bet->id}",
-                "Spin Wheel Win at {$request->multiplier}x multiplier"
+                "Spin Wheel Win at {$multiplier}x multiplier"
             );
         } else {
             $bet->update([
@@ -486,8 +495,14 @@ class GameController extends Controller
             return response()->json(['success' => false, 'message' => 'Bet already settled.'], 400);
         }
 
-        // Roll the dice server-side (1-6, truly random)
-        $rolled = random_int(1, 6);
+        // Check for admin manual override
+        $override = Cache::get('override_dice');
+        if ($override !== null) {
+            $rolled = (int)$override;
+        } else {
+            // Roll the dice server-side (1-6)
+            $rolled = random_int(1, 6);
+        }
 
         // Determine win based on bet type
         $betType = $bet->bet_type; // 'over' | 'under' | 'exact_N'

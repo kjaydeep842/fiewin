@@ -1,368 +1,605 @@
 /**
- * CrashGameManager — Synchronized Real-Time Server State Crash Engine
+ * Crash Game Manager (Dedicated Space Rocket 🚀 Flight Manager)
  */
-
 class CrashGameManager {
-    constructor(config) {
-        this.config = config; // routes, gameId, minBet, maxBet
+    constructor() {
         this.renderer = null;
-        this.currentState = null; // 'BETTING_OPEN', 'FLYING', 'CRASHED'
-        this.activeRoundId = null;
-        this.clientMultiplier = 1.00;
-        this.targetMultiplier = 1.00;
+        this.pollTimer = null;
+        this.animFrame = null;
         this.userBet = null;
-        this.pollInterval = null;
-        this.flightLoop = null;
-
+        this.serverState = null;
         this.init();
     }
 
     init() {
         this.renderer = new CrashCanvasRenderer('crashCanvas');
         this.bindEvents();
-        this.startStatePolling();
+        this.wsManager = new FiewinWebSocketManager('crash', window.USER_ID || null);
+        this.wsManager.on('GameStateUpdated', (state) => {
+            this.updateUI(state);
+            this.fetchServerState();
+        });
+        this.wsManager.on('RequestPollingSync', () => this.fetchServerState());
+        // Always tick the server-side round engine, even when WS is connected
+        this.startStateSyncTicker();
         this.startSmoothFlightLoop();
+    }
+
+    startStateSyncTicker() {
+        if (this.syncTicker) clearInterval(this.syncTicker);
+        this.fetchServerState(); // Immediate initial state load
+        this.syncTicker = setInterval(() => this.fetchServerState(), 1000); // 1s sync ticker
     }
 
     bindEvents() {
         const betBtn = document.getElementById('betCrashBtn');
         const cashoutBtn = document.getElementById('cashoutCrashBtn');
-        const halfBtn = document.getElementById('btnHalfBet');
-        const doubleBtn = document.getElementById('btnDoubleBet');
 
-        if (betBtn) betBtn.addEventListener('click', () => this.placeBet());
-        if (cashoutBtn) cashoutBtn.addEventListener('click', () => this.cashOut());
+        if (betBtn) {
+            betBtn.addEventListener('click', () => this.placeBet());
+        }
+        if (cashoutBtn) {
+            cashoutBtn.addEventListener('click', () => this.cashOut());
+        }
+
+        // Quick amount buttons
+        document.querySelectorAll('[data-crash-amount]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const amountInput = document.getElementById('crashBetAmount');
+                if (amountInput) {
+                    amountInput.value = e.target.getAttribute('data-crash-amount');
+                }
+            });
+        });
+
+        // Half / Double buttons
+        const halfBtn = document.getElementById('btnHalfBetCrash');
+        const doubleBtn = document.getElementById('btnDoubleBetCrash');
 
         if (halfBtn) {
             halfBtn.addEventListener('click', () => {
                 const input = document.getElementById('crashBetAmount');
-                input.value = Math.max(this.config.minBet, Math.floor(parseFloat(input.value) / 2));
-                if (window.soundManager) window.soundManager.play('click');
+                if (input) input.value = Math.max(10, Math.floor((parseFloat(input.value) || 10) / 2));
             });
         }
-
         if (doubleBtn) {
             doubleBtn.addEventListener('click', () => {
                 const input = document.getElementById('crashBetAmount');
-                input.value = Math.min(this.config.maxBet, Math.floor(parseFloat(input.value) * 2));
-                if (window.soundManager) window.soundManager.play('click');
+                if (input) input.value = Math.min(500000, Math.floor((parseFloat(input.value) || 10) * 2));
             });
         }
+
+        // Preset Auto Cashout multipliers
+        const autoInput = document.getElementById('crashAutoCashoutInput');
+        document.querySelectorAll('.crash-auto-chip').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const val = btn.getAttribute('data-val');
+                if (autoInput) autoInput.value = val;
+                const statusTxt = document.getElementById('crashAutoStatusText');
+                if (statusTxt) statusTxt.textContent = val ? val + 'x' : 'OFF';
+            });
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) this.fetchServerState();
+        });
+        window.addEventListener('focus', () => this.fetchServerState());
+        window.addEventListener('online', () => this.fetchServerState());
     }
 
-    switchMode(mode) {
-        if (this.renderer) this.renderer.setMode(mode);
-        const title = document.getElementById('gameModeTitle');
-        const btnRocket = document.getElementById('btnModeRocket');
-        const btnJet = document.getElementById('btnModeJet');
-
-        if (mode === 'rocket') {
-            if (btnRocket) btnRocket.className = 'btn btn-sm btn-primary rounded-pill px-3 fw-bold';
-            if (btnJet) btnJet.className = 'btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold';
-            if (title) title.innerHTML = '<i class="bi bi-rocket-takeoff-fill text-danger me-2"></i>Rocket Launch Arena';
-        } else {
-            if (btnJet) btnJet.className = 'btn btn-sm btn-success rounded-pill px-3 fw-bold';
-            if (btnRocket) btnRocket.className = 'btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold';
-            if (title) title.innerHTML = '<i class="bi bi-airplane-engines-fill text-success me-2"></i>Jet Fighter Flight';
-        }
-        if (window.soundManager) window.soundManager.play('click');
-    }
-
-    /**
-     * Poll server state every 1 second for perfect timestamp synchronization
-     */
     startStatePolling() {
         this.fetchServerState();
-        this.pollInterval = setInterval(() => {
-            this.fetchServerState();
-        }, 1000);
-    }
-
-    /**
-     * Smooth 60 FPS local extrapolation tick loop for high performance multiplier count-up
-     */
-    startSmoothFlightLoop() {
-        const tick = () => {
-            if (this.currentState === 'FLYING') {
-                if (this.clientMultiplier < this.targetMultiplier) {
-                    this.clientMultiplier += 0.008; // Smooth count up between server polls
-                } else {
-                    this.clientMultiplier += 0.004;
-                }
-
-                const multText = document.getElementById('crashMultiplierText');
-                if (multText) multText.innerText = this.clientMultiplier.toFixed(2) + 'x';
-                if (this.renderer) this.renderer.setFlightState(this.clientMultiplier);
-                if (window.soundManager) window.soundManager.updateEnginePitch(this.clientMultiplier);
-            }
-            requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
+        this.pollTimer = setInterval(() => this.fetchServerState(), 1000);
     }
 
     async fetchServerState() {
         try {
-            const res = await fetch(this.config.routes.state, {
+            const response = await fetch('/games/crash/state', {
                 headers: { 'Accept': 'application/json' }
             });
-            const data = await res.json();
-
+            if (!response.ok) return;
+            const data = await response.json();
             if (data.success) {
-                this.updateGameState(data);
+                this.updateUI(data);
             }
-        } catch (err) {
-            console.error('State sync error:', err);
+        } catch (e) {
+            console.error('Crash State Sync Error:', e);
         }
     }
 
-    updateGameState(data) {
-        const round = data.round;
+    updateUI(state) {
+        if (!state) return;
+
+        // Safely extract properties whether state is full HTTP sync or WS event payload
+        const roundObj = state.round || (state.status ? state : (this.serverState?.round || {}));
+        const roundStatus = roundObj.status || state.status || this.serverState?.round?.status || 'BETTING_OPEN';
+        const crashMult = roundObj.crash_multiplier ?? state.crash_multiplier ?? (this.serverState?.round?.crash_multiplier ?? '1.00');
+        const currentMultiplier = state.current_multiplier ?? state.multiplier ?? (this.serverState?.current_multiplier ?? '1.00');
+        const secondsRemaining = state.seconds_remaining ?? (this.serverState?.seconds_remaining ?? 0);
+
+        const prevStatus = this.serverState?.round?.status || this.serverState?.status;
+        const newStatus = roundStatus;
+
+        const multDisplay = document.getElementById('crashMultiplierText');
         const statusBadge = document.getElementById('crashStatusBadge');
-        const multText = document.getElementById('crashMultiplierText');
+        const userBalDisplay = document.getElementById('userWalletBalance');
+        const currentRoundIdEl = document.getElementById('crashCurrentRoundId');
+
+        if (currentRoundIdEl && roundObj.round_id) {
+            currentRoundIdEl.textContent = roundObj.round_id;
+        }
+
+        if (userBalDisplay && state.user_balance !== undefined) {
+            userBalDisplay.textContent = '₹' + state.user_balance;
+        }
+
+        if (multDisplay) {
+            multDisplay.textContent = currentMultiplier + 'x';
+            if (roundStatus === 'CRASHED') {
+                multDisplay.className = 'display-2 fw-black text-danger';
+            } else {
+                multDisplay.className = 'display-2 fw-black text-primary';
+            }
+        }
+
+        if (statusBadge) {
+            if (roundStatus === 'BETTING_OPEN') {
+                const secsStr = String(Math.max(0, parseInt(secondsRemaining) || 0)).padStart(2, '0');
+                statusBadge.innerHTML = `<span class="badge bg-primary px-3 py-2 fs-6">NEXT LAUNCH: ${secsStr}s</span>`;
+            } else if (roundStatus === 'FLYING') {
+                statusBadge.innerHTML = `<span class="badge bg-success px-3 py-2 fs-6">ROCKET ASCENDING</span>`;
+            } else {
+                const secsStr = String(Math.max(0, parseInt(secondsRemaining) || 0)).padStart(2, '0');
+                statusBadge.innerHTML = `<span class="badge bg-danger px-3 py-2 fs-6">CRASHED @ ${crashMult}x • NEXT LAUNCH: ${secsStr}s</span>`;
+            }
+        }
+
+        // --- Sound Triggers ---
+        if (window.soundManager) {
+            if (roundStatus === 'BETTING_OPEN' && secondsRemaining <= 5 && secondsRemaining > 0) {
+                window.soundManager.play('launchCountdown');
+            }
+            if (prevStatus === 'BETTING_OPEN' && newStatus === 'FLYING') {
+                window.soundManager.play('engineIgnition');
+            }
+            if (prevStatus === 'FLYING' && newStatus === 'CRASHED') {
+                window.soundManager.play('alarm');
+            }
+            if (prevStatus === 'CRASHED' && newStatus === 'BETTING_OPEN') {
+                window.soundManager.play('notification');
+            }
+        }
+
+        let userBetData = null;
+        if (state.user_bet !== undefined && state.user_bet !== null) {
+            userBetData = state.user_bet;
+        } else if (state.player && state.player.has_active_bet) {
+            userBetData = {
+                id: state.player.bet_id,
+                round_id: roundObj.round_id || (this.serverState?.round?.round_id),
+                bet_amount: state.player.bet_amount,
+                auto_cashout: state.player.auto_cashout,
+                status: state.player.status
+            };
+        }
+
+        if (userBetData && userBetData.status === 'flying') {
+            this.userBet = userBetData;
+            this.updateActiveBetCard(userBetData, currentMultiplier);
+        } else if (state.user_bet === null || (state.player && !state.player.has_active_bet)) {
+            this.userBet = null;
+            this.hideActiveBetCard();
+        }
+
+        this.toggleBetControls(roundStatus);
+
+        if (state.history) {
+            this.renderHistory(state.history);
+        }
+
+        if (state.live_bets) {
+            this.renderLiveBets(state.live_bets);
+        }
+
+        if (state.my_orders) {
+            this.renderMyOrders(state.my_orders);
+        }
+
+        // Preserve normalized state in serverState
+        this.serverState = {
+            ...(this.serverState || {}),
+            ...state,
+            user_bet: this.userBet,
+            round: {
+                ...(this.serverState?.round || {}),
+                ...(state.round || {}),
+                status: roundStatus,
+                crash_multiplier: crashMult
+            },
+            current_multiplier: currentMultiplier,
+            seconds_remaining: secondsRemaining
+        };
+    }
+
+    updateActiveBetCard(bet, currentMultStr) {
+        const card = document.getElementById('crashActiveBetCard');
+        if (!card) return;
+
+        if (bet.status === 'flying') {
+            card.classList.remove('d-none');
+            const roundIdEl = document.getElementById('crashActiveRoundId');
+            const stakeEl = document.getElementById('crashActiveStake');
+            const profitEl = document.getElementById('crashActiveLiveProfit');
+            const payoutEl = document.getElementById('crashActivePayout');
+
+            const mult = parseFloat(currentMultStr || 1.00);
+            const stake = parseFloat(String(bet.bet_amount).replace(/,/g, ''));
+            const payout = (stake * mult).toFixed(2);
+            const profit = (payout - stake).toFixed(2);
+
+            if (roundIdEl) roundIdEl.textContent = bet.round_id || '-';
+            if (stakeEl) stakeEl.textContent = '₹' + bet.bet_amount;
+            if (profitEl) profitEl.textContent = '+₹' + profit;
+            if (payoutEl) payoutEl.textContent = '₹' + payout;
+        } else {
+            card.classList.add('d-none');
+        }
+    }
+
+    hideActiveBetCard() {
+        const card = document.getElementById('crashActiveBetCard');
+        if (card) card.classList.add('d-none');
+    }
+
+    toggleBetControls(status) {
         const betBtn = document.getElementById('betCrashBtn');
         const cashoutBtn = document.getElementById('cashoutCrashBtn');
 
-        if (data.user_balance && window.updateTopWalletBalance) {
-            window.updateTopWalletBalance(data.user_balance);
-        }
+        if (this.userBet && this.userBet.status === 'flying') {
+            const isCurrentRound = (this.userBet.round_id === this.serverState?.round?.round_id);
 
-        // Update Round History Pills
-        if (data.history) this.renderHistoryPills(data.history);
-
-        // Update Live Player Panel
-        if (data.live_bets) this.renderLiveBets(data.live_bets);
-
-        // State Machine Handling
-        if (round.status === 'BETTING_OPEN') {
-            if (this.currentState !== 'BETTING_OPEN') {
-                this.currentState = 'BETTING_OPEN';
-                this.activeRoundId = round.id;
-                this.userBet = null;
-                this.clientMultiplier = 1.00;
-                this.targetMultiplier = 1.00;
-                if (this.renderer) this.renderer.resetState();
-            }
-
-            const secs = String(data.seconds_remaining).padStart(2, '0');
-            if (statusBadge) {
-                statusBadge.className = 'badge bg-primary bg-opacity-10 text-primary fs-6 px-4 py-2 rounded-pill border border-primary';
-                statusBadge.innerText = `NEXT ROUND: ${secs}s`;
-            }
-            if (multText) multText.innerText = '1.00x';
-
-            if (betBtn && !data.user_bet) {
-                betBtn.disabled = false;
-                betBtn.className = 'btn gh-btn-primary w-100 py-3 fs-6 fw-bold rounded-4 shadow-sm';
-                betBtn.innerHTML = '<i class="bi bi-rocket-fill me-1"></i>PLACE BET';
-            }
-            if (cashoutBtn) {
-                cashoutBtn.disabled = true;
-                cashoutBtn.classList.remove('gh-glow-success');
-                cashoutBtn.innerHTML = '<i class="bi bi-cash-stack me-1"></i>CASH OUT';
-            }
-
-        } else if (round.status === 'FLYING') {
-            if (this.currentState !== 'FLYING') {
-                this.currentState = 'FLYING';
-                this.clientMultiplier = 1.00;
-                if (window.soundManager) window.soundManager.startEngineSound();
-            }
-
-            this.targetMultiplier = parseFloat(data.current_multiplier);
-
-            if (statusBadge) {
-                statusBadge.className = 'badge bg-success bg-opacity-10 text-success fs-6 px-4 py-2 rounded-pill border border-success';
-                statusBadge.innerHTML = '<i class="bi bi-airplane-engines-fill me-1"></i>IN FLIGHT';
-            }
-
-            if (betBtn) {
-                betBtn.disabled = true;
-            }
-
-            // User Bet State in Flying Round
-            if (data.user_bet) {
-                this.userBet = data.user_bet;
-                if (data.user_bet.status === 'flying') {
-                    if (cashoutBtn) {
-                        cashoutBtn.disabled = false;
-                        cashoutBtn.className = 'btn gh-btn-success w-100 py-3 fs-6 fw-bold rounded-4 shadow-sm gh-glow-success';
-                        cashoutBtn.innerHTML = `<i class="bi bi-cash-stack me-1"></i>CASH OUT`;
-                    }
-                } else if (data.user_bet.status === 'cashed_out') {
-                    if (cashoutBtn) {
-                        cashoutBtn.disabled = true;
-                        cashoutBtn.className = 'btn btn-outline-success w-100 py-3 fs-6 fw-bold rounded-4 opacity-75';
-                        cashoutBtn.innerHTML = `<i class="bi bi-check2-circle me-1"></i>CASHED OUT @ ${data.user_bet.cashout_multiplier}x`;
-                        cashoutBtn.classList.remove('gh-glow-success');
-                    }
+            if (status === 'FLYING' && isCurrentRound) {
+                if (betBtn) betBtn.classList.add('d-none');
+                if (cashoutBtn) {
+                    cashoutBtn.classList.remove('d-none');
+                    cashoutBtn.disabled = false;
+                    const mult = parseFloat(this.serverState ? this.serverState.current_multiplier : 1.00);
+                    const winAmt = (parseFloat(String(this.userBet.bet_amount).replace(/,/g, '')) * mult).toFixed(2);
+                    cashoutBtn.innerHTML = `<i class="bi bi-cash-stack me-2"></i>CASH OUT ₹${winAmt} (${mult.toFixed(2)}x)`;
+                }
+            } else {
+                if (cashoutBtn) {
+                    cashoutBtn.classList.add('d-none');
+                    cashoutBtn.disabled = false;
+                }
+                if (betBtn) {
+                    betBtn.classList.remove('d-none');
+                    betBtn.disabled = true;
+                    betBtn.className = 'btn btn-warning btn-lg w-100 rounded-pill fw-bold shadow text-dark';
+                    betBtn.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>BET PLACED FOR NEXT ROUND';
                 }
             }
-
-        } else if (round.status === 'CRASHED') {
-            if (this.currentState !== 'CRASHED') {
-                this.currentState = 'CRASHED';
-                if (this.renderer) this.renderer.triggerCrash(parseFloat(round.crash_multiplier));
-            }
-
-            if (statusBadge) {
-                statusBadge.className = 'badge bg-danger bg-opacity-25 text-danger fs-6 px-4 py-2 rounded-pill border border-danger gh-red-alert-pulse';
-                statusBadge.innerHTML = `<i class="bi bi-x-circle-fill me-1"></i>CRASHED AT ${round.crash_multiplier}x`;
-            }
-            if (multText) multText.innerText = round.crash_multiplier + 'x';
-
-            if (betBtn) betBtn.disabled = true;
+        } else {
             if (cashoutBtn) {
-                cashoutBtn.disabled = true;
-                cashoutBtn.classList.remove('gh-glow-success');
+                cashoutBtn.classList.add('d-none');
+                cashoutBtn.disabled = false;
+            }
+            if (betBtn) {
+                betBtn.classList.remove('d-none');
+                betBtn.className = 'btn btn-primary btn-lg w-100 rounded-pill fw-bold shadow py-3';
+                betBtn.disabled = false;
+                betBtn.innerHTML = '<i class="bi bi-rocket-fill me-2"></i>PLACE ROCKET BET';
             }
         }
     }
 
-    async placeBet() {
-        if (this.currentState !== 'BETTING_OPEN') return;
+    renderHistory(history) {
+        const container = document.getElementById('crashHistoryPills');
+        if (!container) return;
+        container.innerHTML = history.map(item => {
+            const cm = item.crash_multiplier ?? '?';
+            const badgeClass = item.color === 'green' ? 'bg-success' : (item.color === 'orange' ? 'bg-warning text-dark' : 'bg-danger');
+            return `<span class="badge ${badgeClass} rounded-pill px-3 py-2 me-1 fs-6">${cm}x</span>`;
+        }).join('');
+    }
 
-        const betAmount = parseFloat(document.getElementById('crashBetAmount').value);
-        if (isNaN(betAmount) || betAmount < this.config.minBet || betAmount > this.config.maxBet) {
-            alert(`Bet amount must be between ₹${this.config.minBet} and ₹${this.config.maxBet}`);
+    renderLiveBets(bets) {
+        const container = document.getElementById('crashLiveBetsList');
+        if (!container) return;
+        container.innerHTML = bets.map(b => {
+            const stake = b.bet_amount ?? '0.00';
+            const autoCo = b.auto_cashout ? `• Auto: ${b.auto_cashout}x` : '';
+            const rightCol = b.cashout_multiplier
+                ? `${b.cashout_multiplier}x (+\u20b9${b.profit ?? '0.00'})`
+                : (b.status ?? 'flying');
+            return `
+            <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                <div>
+                    <span class="fw-bold d-block">${b.username ?? 'Player'}</span>
+                    <small class="text-muted">Stake \u20b9${stake} ${autoCo}</small>
+                </div>
+                <span class="${b.status === 'cashed_out' ? 'text-success fw-bold' : 'text-muted'}">
+                    ${rightCol}
+                </span>
+            </div>`;
+        }).join('');
+    }
+
+    renderMyOrders(orders) {
+        const container = document.getElementById('crashMyOrdersList');
+        if (!container) return;
+        if (orders.length === 0) {
+            container.innerHTML = '<div class="text-muted text-center py-3">No Rocket orders placed today.</div>';
             return;
         }
+        container.innerHTML = orders.map(o => {
+            const betAmt = parseFloat(o.bet_amount || 0);
+            const multVal = Math.abs(parseFloat(o.cashout_multiplier || 0));
+            const payout = (betAmt * (multVal > 0 ? multVal : 1)).toFixed(2);
+            const netProfit = (payout - betAmt).toFixed(2);
 
-        const betBtn = document.getElementById('betCrashBtn');
-        betBtn.disabled = true;
-        betBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>PLACING...';
+            let statusBadge = '';
+            let profitDisplay = '';
 
-        const formData = new FormData();
-        formData.append('bet_amount', betAmount);
-
-        try {
-            const res = await fetch(this.config.routes.bet, {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': this.config.csrfToken, 'Accept': 'application/json' },
-                body: formData
-            });
-            const data = await res.json();
-
-            if (!data.success) {
-                alert(data.message || 'Bet placement failed');
-                betBtn.disabled = false;
-                betBtn.innerHTML = '<i class="bi bi-rocket-fill me-1"></i>PLACE BET';
-                return;
+            if (o.status === 'cashed_out') {
+                statusBadge = `<span class="badge bg-success px-2 py-1">${multVal.toFixed(2)}x</span>`;
+                profitDisplay = `<div class="small fw-bold text-success">+₹${payout}</div>`;
+            } else if (o.status === 'flying') {
+                statusBadge = `<span class="badge bg-warning text-dark px-2 py-1">RUNNING</span>`;
+                profitDisplay = `<div class="small fw-bold text-warning">IN FLIGHT</div>`;
+            } else {
+                statusBadge = `<span class="badge bg-danger px-2 py-1">LOST</span>`;
+                profitDisplay = `<div class="small fw-bold text-muted">₹0.00</div>`;
             }
 
-            this.userBet = data.bet;
-            if (window.updateTopWalletBalance) window.updateTopWalletBalance(data.new_balance);
+            return `
+                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                    <div>
+                        <div class="fw-bold text-dark" style="font-size: 0.85rem;">${o.round_id}</div>
+                        <small class="text-muted">₹${betAmt.toFixed(2)} ${o.auto_cashout !== '-' ? '• Auto: ' + o.auto_cashout + 'x' : ''} • ${o.time}</small>
+                    </div>
+                    <div class="text-end">
+                        ${statusBadge}
+                        ${profitDisplay}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
 
-            betBtn.className = 'btn btn-success w-100 py-3 fs-6 fw-bold rounded-4 shadow-sm';
-            betBtn.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>BET PLACED';
-            if (window.soundManager) window.soundManager.play('click');
+    showToast(message, type = 'success', customTitle = null) {
+        let toastContainer = document.getElementById('gameToastContainer');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'gameToastContainer';
+            toastContainer.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; width: 90%; max-width: 380px; pointer-events: none;';
+            document.body.appendChild(toastContainer);
+        }
 
-        } catch (err) {
-            console.error(err);
-            alert('Failed to place bet. Please try again.');
-            betBtn.disabled = false;
-            betBtn.innerHTML = '<i class="bi bi-rocket-fill me-1"></i>PLACE BET';
+        let title = customTitle;
+        let bgClass = 'bg-primary text-white';
+        let icon = 'bi-check-circle-fill text-white';
+
+        if (type === 'cashout') {
+            title = title || 'CASHOUT SUCCESSFUL!';
+            bgClass = 'bg-success text-white';
+            icon = 'bi-trophy-fill text-warning';
+        } else if (type === 'danger') {
+            title = title || 'NOTICE';
+            bgClass = 'bg-danger text-white';
+            icon = 'bi-exclamation-circle-fill text-white';
+        } else if (type === 'info') {
+            title = title || 'INFO';
+            bgClass = 'bg-info text-white';
+            icon = 'bi-info-circle-fill text-white';
+        } else {
+            title = title || 'BET PLACED';
+            bgClass = 'bg-primary text-white';
+            icon = 'bi-rocket-fill text-white';
+        }
+
+        const toastEl = document.createElement('div');
+        toastEl.className = `card border-0 shadow-lg rounded-4 overflow-hidden mb-2 ${bgClass}`;
+        toastEl.style.cssText = 'pointer-events: auto; animation: fadeInDown 0.3s ease;';
+        toastEl.innerHTML = `
+            <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-3">
+                    <i class="bi ${icon} fs-2"></i>
+                    <div>
+                        <div class="fw-bold fs-6 mb-0">${title}</div>
+                        <div class="small opacity-90">${message}</div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" onclick="this.closest('.card').remove()"></button>
+            </div>
+        `;
+
+        toastContainer.appendChild(toastEl);
+        setTimeout(() => {
+            toastEl.style.opacity = '0';
+            toastEl.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => toastEl.remove(), 500);
+        }, 3000);
+    }
+
+    async placeBet() {
+        const input = document.getElementById('crashBetAmount');
+        const autoInput = document.getElementById('crashAutoCashoutInput');
+        const amount = parseFloat(input?.value || 0);
+        const autoVal = autoInput && autoInput.value ? parseFloat(autoInput.value) : null;
+
+        if (!amount || amount < 10) return this.showToast('Minimum bet is ₹10', 'danger');
+
+        const betBtn = document.getElementById('betCrashBtn');
+        if (betBtn) {
+            betBtn.disabled = true;
+            betBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>PLACING BET...';
+        }
+        if (window.soundManager) window.soundManager.play('click');
+
+        try {
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const res = await fetch('/games/crash/bet', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    bet_amount: amount,
+                    auto_cashout: autoVal
+                })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                this.userBet = data.bet;
+                this.showToast(data.message || 'Rocket bet placed successfully! Waiting for launch...', 'success', 'BET PLACED');
+                if (data.new_balance) {
+                    const userBalDisplay = document.getElementById('userWalletBalance');
+                    if (userBalDisplay) userBalDisplay.textContent = '₹' + data.new_balance;
+                }
+                this.fetchServerState();
+            } else {
+                if (window.soundManager) window.soundManager.play('lose');
+                this.showToast(data.message || 'Failed to place bet', 'danger');
+                if (betBtn) {
+                    betBtn.disabled = false;
+                    betBtn.innerHTML = '<i class="bi bi-rocket-fill me-2"></i>PLACE ROCKET BET';
+                }
+            }
+        } catch (e) {
+            console.error('Crash Bet Error:', e);
+            this.showToast('Network error, please try again.', 'danger');
+            if (betBtn) {
+                betBtn.disabled = false;
+                betBtn.innerHTML = '<i class="bi bi-rocket-fill me-2"></i>PLACE ROCKET BET';
+            }
         }
     }
 
     async cashOut() {
-        if (this.currentState !== 'FLYING' || !this.userBet || this.userBet.status !== 'flying') return;
+        // Prevent double cashout click
+        if (this._cashingOut) return;
+        this._cashingOut = true;
+
+        const activeBet = this.userBet || (this.serverState?.user_bet) || (this.serverState?.player?.has_active_bet ? this.serverState.player : null);
+        const betId = activeBet?.id || activeBet?.bet_id;
+
+        if (!betId) {
+            console.error('No active bet ID found for cashout.');
+            this._cashingOut = false;
+            return;
+        }
+
+        const currentMult = parseFloat(this.serverState?.current_multiplier || '1.00');
 
         const cashoutBtn = document.getElementById('cashoutCrashBtn');
-        cashoutBtn.disabled = true;
-
-        const formData = new FormData();
-        formData.append('bet_id', this.userBet.id);
-        formData.append('multiplier', this.clientMultiplier.toFixed(2));
+        if (cashoutBtn) {
+            cashoutBtn.disabled = true;
+            cashoutBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>CASHING OUT...';
+        }
 
         try {
-            const res = await fetch(this.config.routes.cashout, {
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const res = await fetch('/games/crash/cashout', {
                 method: 'POST',
-                headers: { 'X-CSRF-TOKEN': this.config.csrfToken, 'Accept': 'application/json' },
-                body: formData
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    bet_id: betId,
+                    multiplier: currentMult
+                })
             });
+
             const data = await res.json();
-
             if (data.success) {
-                this.userBet.status = 'cashed_out';
-                this.userBet.cashout_multiplier = data.multiplier;
-
-                if (window.updateTopWalletBalance) window.updateTopWalletBalance(data.new_balance);
-                document.getElementById('crashWinMult').innerText = data.multiplier + 'x';
-                document.getElementById('crashWinAmount').innerText = '+₹' + data.win_amount;
-
-                const winModal = new bootstrap.Modal(document.getElementById('crashWinModal'));
-                winModal.show();
-
-                if (this.renderer) this.renderer.triggerPlayerCashOut();
+                this.userBet = null;
+                this._cashingOut = false;
+                this.hideActiveBetCard();
+                if (window.soundManager) window.soundManager.play('cashout');
+                this.showToast(data.message, 'cashout', 'CASHOUT SUCCESSFUL!');
+                if (data.new_balance) {
+                    const userBalDisplay = document.getElementById('userWalletBalance');
+                    if (userBalDisplay) userBalDisplay.textContent = '₹' + data.new_balance;
+                    // Also update top header balance
+                    const topBal = document.getElementById('topWalletBalance');
+                    if (topBal) topBal.textContent = '₹' + data.new_balance;
+                }
+                this.fetchServerState();
             } else {
-                alert(data.message || 'Cashout failed');
+                this._cashingOut = false;
+                if (window.soundManager) window.soundManager.play('lose');
+                this.showToast(data.message || 'Cashout failed', 'danger');
+                // Re-enable cashout button so player can retry
+                if (cashoutBtn) {
+                    cashoutBtn.disabled = false;
+                    cashoutBtn.innerHTML = `<i class="bi bi-cash-stack me-2"></i>CASH OUT NOW`;
+                }
+                this.toggleBetControls(this.serverState?.round?.status || 'BETTING_OPEN');
             }
-        } catch (err) {
-            console.error(err);
-            alert('Cashout request failed. Please try again.');
+        } catch (e) {
+            this._cashingOut = false;
+            console.error('Crash Cashout Error:', e);
+            this.showToast('Network error during cashout. Please try again.', 'danger');
+            if (cashoutBtn) {
+                cashoutBtn.disabled = false;
+                cashoutBtn.innerHTML = `<i class="bi bi-cash-stack me-2"></i>CASH OUT NOW`;
+            }
+            this.toggleBetControls(this.serverState?.round?.status || 'BETTING_OPEN');
         }
     }
 
-    renderHistoryPills(historyList) {
-        const container = document.getElementById('historyPillContainer');
-        if (!container) return;
+    startSmoothFlightLoop() {
+        const loop = () => {
+            try {
+                if (this.serverState && this.renderer) {
+                    const roundObj = this.serverState.round || {};
+                    const status = roundObj.status || this.serverState.status || 'BETTING_OPEN';
 
-        let html = `<span class="badge bg-white text-secondary border shadow-sm flex-shrink-0 py-2 px-3" style="font-size: 0.72rem;">
-            <i class="bi bi-clock-history me-1 text-primary"></i>HISTORY
-        </span>`;
+                    let mult = parseFloat(this.serverState.current_multiplier || '1.00');
 
-        historyList.forEach(item => {
-            const multVal = item.crash_multiplier || item.multiplier || item.win_multiplier || '1.00';
-            let badgeClass = 'bg-danger bg-opacity-10 text-danger border-danger';
-            const num = parseFloat(multVal);
-            if (num >= 2.0) badgeClass = 'bg-success bg-opacity-10 text-success border-success';
-            else if (num >= 1.5) badgeClass = 'bg-warning bg-opacity-10 text-warning border-warning';
+                    if (status === 'FLYING') {
+                        if (!this.flightStartMs) {
+                            this.flightStartMs = Date.now() - Math.max(0, (mult - 1.00) / 0.40 * 1000);
+                        }
+                        const elapsedSec = Math.max(0, (Date.now() - this.flightStartMs) / 1000);
+                        mult = 1.00 + elapsedSec * 0.40;
+                        const multDisplay = document.getElementById('crashMultiplierText');
+                        if (multDisplay) multDisplay.textContent = mult.toFixed(2) + 'x';
+                    } else {
+                        this.flightStartMs = null;
+                    }
 
-            html += `<span class="badge rounded-pill ${badgeClass} border fw-bold px-3 py-1 me-1">${multVal}x</span>`;
-        });
+                    const progress = Math.min((mult - 1) / 10, 1);
+                    this.renderer.renderFrame(progress, status);
 
-        container.innerHTML = html;
+                    if (this.userBet && this.userBet.status === 'flying' && status === 'FLYING') {
+                        const cashoutBtn = document.getElementById('cashoutCrashBtn');
+                        if (cashoutBtn) {
+                            const winAmt = (parseFloat(String(this.userBet.bet_amount).replace(/,/g, '')) * mult).toFixed(2);
+                            cashoutBtn.innerHTML = `<i class="bi bi-cash-stack me-2"></i>CASH OUT ₹${winAmt} (${mult.toFixed(2)}x)`;
+                        }
+                        this.updateActiveBetCard(this.userBet, mult.toFixed(2));
+                    }
+                }
+            } catch (e) {
+                // Safeguard against transient state sync glitches
+            }
+            this.animFrame = requestAnimationFrame(loop);
+        };
+        loop();
     }
 
-    renderLiveBets(betsList) {
-        const tbody = document.getElementById('livePlayersBody');
-        const flyingCountEl = document.getElementById('statFlyingPlayers');
-        const cashedCountEl = document.getElementById('statCashedPlayers');
-        if (!tbody) return;
-
-        let flyingCount = 0;
-        let cashedCount = 0;
-        let html = '';
-
-        betsList.forEach(p => {
-            if (p.status === 'flying') flyingCount++;
-            if (p.status === 'cashed_out') cashedCount++;
-
-            let statusBadge = '<span class="badge bg-warning bg-opacity-10 text-warning border border-warning">✈️ Flying</span>';
-            if (p.status === 'cashed_out') {
-                statusBadge = `<span class="badge bg-success bg-opacity-10 text-success border border-success">💰 @ ${p.cashout_multiplier}x</span>`;
-            } else if (p.status === 'lost') {
-                statusBadge = '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger">💥 Crashed</span>';
-            }
-
-            html += `<tr>
-                <td>
-                    <div class="d-flex align-items-center gap-2">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${p.username}" class="rounded-circle" width="24" height="24">
-                        <span class="fw-bold text-dark small">${p.username}</span>
-                    </div>
-                </td>
-                <td class="fw-bold">₹${p.bet_amount}</td>
-                <td>${statusBadge}</td>
-                <td class="fw-bold ${parseFloat(p.profit) > 0 ? 'text-success' : 'text-muted'}">
-                    ${parseFloat(p.profit) > 0 ? '+₹' + p.profit : '-'}
-                </td>
-            </tr>`;
-        });
-
-        tbody.innerHTML = html || '<tr><td colspan="4" class="text-secondary py-3">No active bets in this round</td></tr>';
-        if (flyingCountEl) flyingCountEl.innerText = flyingCount;
-        if (cashedCountEl) cashedCountEl.innerText = cashedCount;
+    destroy() {
+        if (this.wsManager) this.wsManager.destroy();
+        if (this.syncTicker) clearInterval(this.syncTicker);
+        if (this.animFrame) cancelAnimationFrame(this.animFrame);
     }
 }
 

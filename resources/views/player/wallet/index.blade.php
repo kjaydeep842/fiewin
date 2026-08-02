@@ -1,61 +1,189 @@
 @extends('layouts.app')
 
 @section('content')
+<style>
+    /* ── Wallet Page Styles ── */
+    .wallet-summary-card {
+        background: linear-gradient(135deg, #1E88E5 0%, #0D47A1 100%);
+        color: #ffffff;
+        border-radius: 20px;
+        box-shadow: 0 10px 25px rgba(30, 136, 229, 0.25);
+    }
+
+    .wallet-stat-box {
+        background: rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        padding: 8px 6px;
+    }
+
+    /* Segmented Tab Nav */
+    .wallet-nav-pills {
+        background: rgba(15, 23, 42, 0.05);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 16px;
+        padding: 4px;
+        display: flex;
+        gap: 4px;
+    }
+
+    .wallet-nav-pills .nav-link {
+        flex: 1;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        padding: 10px 6px;
+        color: #64748b;
+        transition: all 0.2s ease;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .wallet-nav-pills .nav-link.active {
+        background: #1E88E5 !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 12px rgba(30, 136, 229, 0.3);
+    }
+
+    /* Payment Method Cards */
+    .pm-card-input {
+        display: none;
+    }
+
+    .pm-card-label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 12px 8px;
+        border-radius: 14px;
+        border: 2px solid #e2e8f0;
+        background: #f8fafc;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        height: 100%;
+        position: relative;
+    }
+
+    .pm-card-input:checked + .pm-card-label {
+        border-color: #1E88E5;
+        background: rgba(30, 136, 229, 0.06);
+        box-shadow: 0 4px 12px rgba(30, 136, 229, 0.15);
+    }
+
+    .pm-card-input:checked + .pm-card-label::after {
+        content: "\F272";
+        font-family: "bootstrap-icons";
+        position: absolute;
+        top: 6px;
+        right: 8px;
+        color: #1E88E5;
+        font-size: 0.9rem;
+    }
+
+    .chip-btn {
+        font-size: 0.8rem;
+        font-weight: 700;
+        border-radius: 20px;
+        padding: 6px 12px;
+        border: 1px solid #cbd5e1;
+        background: #f8fafc;
+        color: #334155;
+        transition: all 0.15s ease;
+    }
+
+    .chip-btn:hover, .chip-btn:active {
+        background: #1E88E5;
+        color: #ffffff;
+        border-color: #1E88E5;
+    }
+</style>
+
 <!-- Wallet Summary Card -->
-<div class="gh-card p-4 mb-3" style="background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%); color: #ffffff;">
+<div class="gh-card wallet-summary-card p-3 p-sm-4 mb-3">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <span class="small opacity-75 d-block">TOTAL WALLET BALANCE</span>
-            <h2 class="fw-bold mb-0 font-monospace">₹{{ number_format($wallet->total_balance, 2) }}</h2>
+            <span class="d-block opacity-75 fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.05em;">TOTAL WALLET BALANCE</span>
+            <h2 class="fw-bold mb-0 font-monospace" style="font-size: clamp(1.4rem, 5.5vw, 2.2rem); letter-spacing: -0.02em;">
+                ₹{{ number_format($wallet->total_balance, 2) }}
+            </h2>
         </div>
-        <span class="badge bg-light text-primary fw-bold rounded-pill px-3 py-1"><i class="bi bi-shield-check me-1"></i>SECURE</span>
+        <span class="badge bg-white text-primary fw-bold rounded-pill px-3 py-2 shadow-sm d-flex align-items-center gap-1" style="font-size: 0.72rem;">
+            <i class="bi bi-shield-lock-fill text-success fs-6"></i>SECURE
+        </span>
     </div>
 
-    <div class="row g-2 text-center pt-2 border-top border-white border-opacity-25" style="font-size: 0.8rem;">
+    <!-- Sub-balances 3 Column Grid -->
+    <div class="row g-2 text-center pt-2">
         <div class="col-4">
-            <span class="opacity-75 d-block" style="font-size: 0.65rem;">MAIN BALANCE</span>
-            <span class="fw-bold">₹{{ number_format($wallet->main_balance, 2) }}</span>
+            <div class="wallet-stat-box">
+                <span class="d-block opacity-75 text-truncate" style="font-size: 0.62rem; font-weight: 600;">MAIN BALANCE</span>
+                <span class="fw-bold font-monospace text-truncate d-block" style="font-size: 0.78rem;">₹{{ number_format($wallet->main_balance, 2) }}</span>
+            </div>
         </div>
         <div class="col-4">
-            <span class="opacity-75 d-block" style="font-size: 0.65rem;">BONUS WALLET</span>
-            <span class="fw-bold">₹{{ number_format($wallet->bonus_balance, 2) }}</span>
+            <div class="wallet-stat-box">
+                <span class="d-block opacity-75 text-truncate" style="font-size: 0.62rem; font-weight: 600;">BONUS WALLET</span>
+                <span class="fw-bold font-monospace text-truncate d-block" style="font-size: 0.78rem;">₹{{ number_format($wallet->bonus_balance, 2) }}</span>
+            </div>
         </div>
         <div class="col-4">
-            <span class="opacity-75 d-block" style="font-size: 0.65rem;">COMMISSION</span>
-            <span class="fw-bold">₹{{ number_format($wallet->commission_balance, 2) }}</span>
+            <div class="wallet-stat-box">
+                <span class="d-block opacity-75 text-truncate" style="font-size: 0.62rem; font-weight: 600;">COMMISSION</span>
+                <span class="fw-bold font-monospace text-truncate d-block" style="font-size: 0.78rem;">₹{{ number_format($wallet->commission_balance, 2) }}</span>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Wallet Actions (Deposit, Withdraw, Transfer) -->
+<!-- Wallet Action Card (Deposit, Withdraw, Transfer) -->
 <div class="gh-card p-3 mb-3">
-    <ul class="nav nav-pills nav-fill mb-3" role="tablist">
-        <li class="nav-item">
-            <button class="nav-link active fw-bold py-2 rounded-pill" data-bs-toggle="pill" data-bs-target="#pillDeposit"><i class="bi bi-plus-circle me-1"></i>Deposit</button>
+    <!-- Segmented Navigation Pills -->
+    <ul class="nav wallet-nav-pills mb-3" role="tablist">
+        <li class="nav-item flex-fill">
+            <button class="nav-link active w-100" data-bs-toggle="pill" data-bs-target="#pillDeposit">
+                <i class="bi bi-plus-circle-fill"></i>Deposit
+            </button>
         </li>
-        <li class="nav-item">
-            <button class="nav-link fw-bold py-2 rounded-pill text-dark" data-bs-toggle="pill" data-bs-target="#pillWithdraw"><i class="bi bi-dash-circle me-1"></i>Withdraw</button>
+        <li class="nav-item flex-fill">
+            <button class="nav-link w-100" data-bs-toggle="pill" data-bs-target="#pillWithdraw">
+                <i class="bi bi-dash-circle-fill"></i>Withdraw
+            </button>
         </li>
-        <li class="nav-item">
-            <button class="nav-link fw-bold py-2 rounded-pill text-dark" data-bs-toggle="pill" data-bs-target="#pillTransfer"><i class="bi bi-arrow-left-right me-1"></i>Transfer</button>
+        <li class="nav-item flex-fill">
+            <button class="nav-link w-100" data-bs-toggle="pill" data-bs-target="#pillTransfer">
+                <i class="bi bi-arrow-left-right"></i>Transfer
+            </button>
         </li>
     </ul>
 
     <div class="tab-content">
-        <!-- Deposit -->
+        <!-- Deposit Tab -->
         <div class="tab-pane fade show active" id="pillDeposit">
-            <form action="{{ route('wallet.deposit') }}" method="POST">
+            <form action="{{ route('wallet.deposit') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="mb-3">
-                    <label class="form-label text-secondary small fw-semibold">SELECT PAYMENT METHOD</label>
+                    <label class="form-label text-secondary small fw-bold mb-2">SELECT PAYMENT METHOD</label>
                     <div class="row g-2">
                         @foreach($paymentMethods as $m)
                             <div class="col-6">
-                                <label class="w-100 p-2 rounded-3 border text-center cursor-pointer bg-light">
-                                    <input type="radio" name="payment_method" value="{{ $m->code }}" class="me-1" required {{ $loop->first ? 'checked' : '' }}>
-                                    <span class="fw-bold text-dark small">{{ $m->name }}</span>
+                                <input type="radio" name="payment_method" id="pm_{{ $m->code }}" value="{{ $m->code }}" class="pm-card-input" required {{ $loop->first ? 'checked' : '' }}>
+                                <label for="pm_{{ $m->code }}" class="pm-card-label py-3 px-2">
+                                    @if(str_contains($m->code, 'upi'))
+                                        <i class="bi bi-qr-code-scan text-primary fs-4 mb-1"></i>
+                                    @else
+                                        <i class="bi bi-bank text-primary fs-4 mb-1"></i>
+                                    @endif
+                                    <span class="fw-bold text-dark" style="font-size: 0.82rem; line-height: 1.2;">{{ $m->name }}</span>
                                     @if($m->bonus_percentage > 0)
-                                        <small class="d-block text-success fw-semibold" style="font-size: 0.65rem;">+{{ $m->bonus_percentage }}% Extra</small>
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-1 mt-1" style="font-size: 0.65rem;">
+                                            +{{ number_format($m->bonus_percentage, 2) }}% Extra
+                                        </span>
                                     @endif
                                 </label>
                             </div>
@@ -64,36 +192,46 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label text-secondary small fw-semibold">DEPOSIT AMOUNT (₹)</label>
-                    <div class="d-flex gap-1 gap-sm-2 mb-2">
-                        <button type="button" class="btn btn-outline-primary btn-sm flex-fill rounded-pill px-1" style="font-size: 0.78rem;" onclick="setDeposit(200)">₹200</button>
-                        <button type="button" class="btn btn-outline-primary btn-sm flex-fill rounded-pill px-1" style="font-size: 0.78rem;" onclick="setDeposit(500)">₹500</button>
-                        <button type="button" class="btn btn-outline-primary btn-sm flex-fill rounded-pill px-1" style="font-size: 0.78rem;" onclick="setDeposit(1000)">₹1000</button>
-                        <button type="button" class="btn btn-outline-primary btn-sm flex-fill rounded-pill px-1" style="font-size: 0.78rem;" onclick="setDeposit(5000)">₹5000</button>
+                    <label class="form-label text-secondary small fw-bold mb-2">DEPOSIT AMOUNT (₹)</label>
+                    <div class="d-flex gap-2 mb-2 flex-wrap">
+                        <button type="button" class="btn chip-btn flex-fill" onclick="setDeposit(200)">₹200</button>
+                        <button type="button" class="btn chip-btn flex-fill" onclick="setDeposit(500)">₹500</button>
+                        <button type="button" class="btn chip-btn flex-fill" onclick="setDeposit(1000)">₹1000</button>
+                        <button type="button" class="btn chip-btn flex-fill" onclick="setDeposit(5000)">₹5000</button>
                     </div>
-                    <input type="number" name="amount" id="depositAmountInput" class="form-control form-control-lg fw-bold" value="500" min="100" required>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light fw-bold text-secondary">₹</span>
+                        <input type="number" name="amount" id="depositAmountInput" class="form-control form-control-lg fw-bold text-dark" value="500" min="10" required>
+                    </div>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label text-secondary small fw-semibold">UTR / REFERENCE TRANSACTION NUMBER</label>
-                    <input type="text" name="utr_number" class="form-control" placeholder="e.g. 329871239812">
+                    <label class="form-label text-secondary small fw-bold mb-1">UTR / TRANSACTION REFERENCE NO. (OPTIONAL)</label>
+                    <input type="text" name="utr_number" class="form-control form-control-lg" placeholder="e.g. 329871239812">
+                    <small class="text-muted" style="font-size: 0.72rem;">You can also enter UTR & upload payment proof on the next checkout screen.</small>
                 </div>
 
-                <button type="submit" class="btn gh-btn-success w-100 py-2 fs-6 rounded-pill">PROCEED TO RECHARGE</button>
+                <button type="submit" class="btn gh-btn-success w-100 py-3 fs-6 fw-bold rounded-3 shadow">
+                    <i class="bi bi-wallet2 me-2"></i>PROCEED TO RECHARGE
+                </button>
             </form>
         </div>
 
-        <!-- Withdraw -->
+        <!-- Withdraw Tab -->
         <div class="tab-pane fade" id="pillWithdraw">
             <form action="{{ route('wallet.withdraw') }}" method="POST">
                 @csrf
                 <div class="mb-3">
-                    <label class="form-label text-secondary small fw-semibold">WITHDRAWAL AMOUNT (₹)</label>
-                    <input type="number" name="amount" class="form-control form-control-lg fw-bold" placeholder="Min ₹100" min="100" required>
+                    <label class="form-label text-secondary small fw-bold mb-1">WITHDRAWAL AMOUNT (₹)</label>
+                    <div class="input-group mb-1">
+                        <span class="input-group-text bg-light fw-bold text-secondary">₹</span>
+                        <input type="number" name="amount" class="form-control form-control-lg fw-bold text-dark" placeholder="Min ₹100" min="100" required>
+                    </div>
+                    <small class="text-muted" style="font-size: 0.72rem;">Available Balance: ₹{{ number_format($wallet->main_balance, 2) }}</small>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label text-secondary small fw-semibold">SAVED BANK ACCOUNT</label>
+                    <label class="form-label text-secondary small fw-bold mb-1">SAVED BANK ACCOUNT</label>
                     <select name="bank_account_id" class="form-select">
                         @forelse($bankAccounts as $b)
                             <option value="{{ $b->id }}">{{ $b->bank_name }} - {{ $b->account_number }} ({{ $b->account_holder }})</option>
@@ -104,27 +242,34 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label text-secondary small fw-semibold">OR ENTER UPI ID</label>
-                    <input type="text" name="upi_id" class="form-control" placeholder="user@upi">
+                    <label class="form-label text-secondary small fw-bold mb-1">OR ENTER UPI ID</label>
+                    <input type="text" name="upi_id" class="form-control" placeholder="username@upi">
                 </div>
 
-                <button type="submit" class="btn gh-btn-primary w-100 py-2 fs-6 rounded-pill">SUBMIT WITHDRAWAL</button>
+                <button type="submit" class="btn gh-btn-primary w-100 py-3 fs-6 fw-bold rounded-3 shadow">
+                    <i class="bi bi-arrow-up-circle-fill me-2"></i>SUBMIT WITHDRAWAL
+                </button>
             </form>
         </div>
 
-        <!-- Transfer -->
+        <!-- Transfer Tab -->
         <div class="tab-pane fade" id="pillTransfer">
             <form action="{{ route('wallet.transfer') }}" method="POST">
                 @csrf
-                <div class="p-3 bg-light rounded-3 border mb-3">
-                    <small class="text-secondary d-block mb-1">AVAILABLE COMMISSION</small>
-                    <h4 class="fw-bold text-primary mb-0">₹{{ number_format($wallet->commission_balance, 2) }}</h4>
+                <div class="p-3 bg-light rounded-3 border mb-3 text-center">
+                    <small class="text-secondary d-block fw-semibold mb-1">AVAILABLE COMMISSION BALANCE</small>
+                    <h4 class="fw-bold text-primary mb-0 font-monospace">₹{{ number_format($wallet->commission_balance, 2) }}</h4>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label text-secondary small fw-semibold">TRANSFER AMOUNT TO MAIN WALLET (₹)</label>
-                    <input type="number" name="amount" class="form-control form-control-lg fw-bold" value="{{ $wallet->commission_balance }}" min="10" max="{{ $wallet->commission_balance }}" required>
+                    <label class="form-label text-secondary small fw-bold mb-1">TRANSFER AMOUNT TO MAIN WALLET (₹)</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light fw-bold text-secondary">₹</span>
+                        <input type="number" name="amount" class="form-control form-control-lg fw-bold text-dark" value="{{ $wallet->commission_balance }}" min="10" max="{{ $wallet->commission_balance }}" required>
+                    </div>
                 </div>
-                <button type="submit" class="btn gh-btn-success w-100 py-2 fs-6 rounded-pill">TRANSFER TO MAIN BALANCE</button>
+                <button type="submit" class="btn gh-btn-success w-100 py-3 fs-6 fw-bold rounded-3 shadow">
+                    <i class="bi bi-arrow-left-right me-2"></i>TRANSFER TO MAIN BALANCE
+                </button>
             </form>
         </div>
     </div>

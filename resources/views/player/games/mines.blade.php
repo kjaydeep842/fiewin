@@ -243,6 +243,13 @@ class MinesGameEngine {
         this.startBtn.onclick = () => this.startGame();
         this.cashoutBtn.onclick = () => this.cashOut();
 
+        this.betInput.oninput = () => {
+            if (!this.isPlaying) {
+                let amt = parseFloat(String(this.betInput.value).replace(/,/g, '')) || 0.00;
+                this.updateHeaderDisplay(1.00, amt);
+            }
+        };
+
         if (this.refreshHistoryBtn) {
             this.refreshHistoryBtn.onclick = () => this.fetchHistory();
         }
@@ -313,7 +320,8 @@ class MinesGameEngine {
         this.cashoutBtn.classList.remove('gh-glow-success');
         if (this.gridContainer) this.gridContainer.classList.remove('gh-red-alert-pulse');
 
-        this.updateHeaderDisplay(1.00, 0.00);
+        let initialBet = parseFloat(String(this.betInput.value).replace(/,/g, '')) || 0.00;
+        this.updateHeaderDisplay(1.00, initialBet);
         this.renderBoard();
     }
 
@@ -328,22 +336,28 @@ class MinesGameEngine {
     }
 
     updateHeaderDisplay(multiplier, profit) {
-        this.multiplierDisplay.innerText = parseFloat(multiplier).toFixed(2) + 'x';
-        this.profitDisplay.innerText = '₹' + parseFloat(profit).toFixed(2);
+        let multVal = parseFloat(String(multiplier).replace(/,/g, '')) || 1.00;
+        let profitVal = parseFloat(String(profit).replace(/,/g, '')) || 0.00;
+        this.multiplierDisplay.innerText = multVal.toFixed(2) + 'x';
+        this.profitDisplay.innerText = '₹' + profitVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
     updateWalletDisplay(balance) {
-        document.querySelectorAll('.font-monospace').forEach(el => {
-            if (el.innerText.includes('₹') && !el.id.includes('Profit') && !el.id.includes('WinAmount')) {
-                el.innerText = '₹' + balance;
+        if (window.updateTopWalletBalance) {
+            window.updateTopWalletBalance(balance);
+        } else {
+            const el = document.getElementById('topWalletBalance');
+            if (el) {
+                let balVal = parseFloat(String(balance).replace(/,/g, '')) || 0.00;
+                el.innerText = '₹' + balVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             }
-        });
+        }
     }
 
     async startGame() {
         if (this.isPlaying || this.isStarting) return;
 
-        const betAmount = parseFloat(this.betInput.value);
+        const betAmount = parseFloat(String(this.betInput.value).replace(/,/g, ''));
         const minesCount = parseInt(this.minesSelect.value);
 
         if (isNaN(betAmount) || betAmount < this.minBet || betAmount > this.maxBet) {
@@ -390,7 +404,7 @@ class MinesGameEngine {
             this.renderBoard();
             this.cashoutBtn.disabled = false;
             this.cashoutBtn.classList.add('gh-glow-success');
-            this.updateHeaderDisplay(1.00, 0.00);
+            this.updateHeaderDisplay(1.00, betAmount);
 
         } catch (err) {
             console.error('Start Game Error:', err);
@@ -449,8 +463,8 @@ class MinesGameEngine {
 
                 if (window.soundManager) window.soundManager.play('crystal');
 
-                this.currentMultiplier = parseFloat(data.multiplier);
-                this.currentProfit = parseFloat(data.current_profit);
+                this.currentMultiplier = parseFloat(String(data.multiplier).replace(/,/g, ''));
+                this.currentProfit = parseFloat(String(data.current_profit).replace(/,/g, ''));
                 this.updateHeaderDisplay(this.currentMultiplier, this.currentProfit);
 
                 if (data.status === 'won') {
@@ -461,8 +475,9 @@ class MinesGameEngine {
                     this.unlockControls();
                     this.updateWalletDisplay(data.new_balance);
 
+                    let winVal = parseFloat(String(data.win_amount).replace(/,/g, '')) || 0.00;
                     document.getElementById('minesWinMult').innerText = data.multiplier + 'x';
-                    document.getElementById('minesWinAmount').innerText = '+₹' + data.win_amount;
+                    document.getElementById('minesWinAmount').innerText = '+₹' + winVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                     this.winModal.show();
                     if (window.soundManager) window.soundManager.play('win');
                     if (window.animationManager) {
@@ -521,8 +536,9 @@ class MinesGameEngine {
                 });
             }
 
+            let cashoutWinVal = parseFloat(String(data.win_amount).replace(/,/g, '')) || 0.00;
             document.getElementById('minesWinMult').innerText = data.multiplier + 'x';
-            document.getElementById('minesWinAmount').innerText = '+₹' + data.win_amount;
+            document.getElementById('minesWinAmount').innerText = '+₹' + cashoutWinVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             this.winModal.show();
             if (window.soundManager) window.soundManager.play('cashout');
             if (window.animationManager) {

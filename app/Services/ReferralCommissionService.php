@@ -23,7 +23,7 @@ class ReferralCommissionService
         3 => 1.0,
     ];
 
-    public function processBetCommission(GameBet $bet): void
+    public function processBetCommission(object $bet): void
     {
         $bettor = $bet->user;
         if (!$bettor || !$bettor->referred_by) {
@@ -50,7 +50,7 @@ class ReferralCommissionService
                 Commission::create([
                     'user_id' => $referrer->id,
                     'source_user_id' => $bettor->id,
-                    'bet_id' => $bet->id,
+                    'bet_id' => ($bet instanceof GameBet) ? $bet->id : null,
                     'level' => $level,
                     'amount' => $commissionAmount,
                     'rate_percentage' => $rate,

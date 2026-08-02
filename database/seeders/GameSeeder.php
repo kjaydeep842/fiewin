@@ -128,10 +128,30 @@ class GameSeeder extends Seeder
                 'instruction' => 'Adjust slider target to configure payout odds.',
                 'config' => ['min_target' => 5, 'max_target' => 95],
             ],
+            [
+                'name' => 'Andar Bahar',
+                'slug' => 'andar-bahar',
+                'code' => 'andar_bahar',
+                'category_id' => $casinoCat?->id,
+                'image' => '/images/games/andar_bahar.png',
+                'icon' => 'bi-suit-spade-fill',
+                'min_entry_fee' => 10.00,
+                'max_entry_fee' => 50000.00,
+                'win_multiplier' => 2.00,
+                'rtp_percentage' => 96.00,
+                'is_active' => true,
+                'rules' => 'Traditional Indian Card Game. Predict whether the matching card rank lands on Andar, Bahar, or Tie.',
+                'instruction' => 'Choose Andar (2x), Bahar (2x), or Tie (9x) before the 45s countdown ends.',
+                'config' => ['round_seconds' => 60, 'betting_seconds' => 45],
+            ],
         ];
 
         foreach ($games as $g) {
             Game::firstOrCreate(['code' => $g['code']], $g);
         }
+
+        \App\Models\AndarBaharSetting::getSettings();
+        \App\Models\JetSetting::getSettings();
+        \App\Models\CrashSetting::getSettings();
     }
 }

@@ -9,26 +9,32 @@ use Carbon\Carbon;
 class CrashHistoryService
 {
     /**
-     * Get top 20 latest settled crash rounds for history pill display.
+     * Get top 20 latest settled crash/jet rounds per gameType.
      */
-    public function getLatestRounds(int $limit = 20): array
+    public function getLatestRounds(int $limit = 20, string $gameType = 'rocket'): array
     {
-        $rounds = CrashRound::where('status', 'CRASHED')
+        $gameType = in_array($gameType, ['jet', 'rocket']) ? $gameType : 'rocket';
+
+        $rounds = CrashRound::where('game_type', $gameType)
+            ->where('status', 'CRASHED')
             ->orderBy('id', 'desc')
             ->take($limit)
             ->get();
 
         if ($rounds->isEmpty()) {
-            // Seeded default fallback history for instant rich UI
-            $defaults = [14.50, 1.12, 1.85, 4.82, 1.05, 22.40, 3.15, 1.40, 8.90, 2.10];
-            return array_map(function ($mult, $i) {
+            // Seeded default fallback history per game mode for instant rich UI
+            $defaults = ($gameType === 'jet') 
+                ? [2.48, 3.01, 1.24, 99.01, 2.95, 1.15, 4.30, 1.88, 12.40, 2.05]
+                : [14.50, 1.12, 1.85, 4.82, 1.05, 22.40, 3.15, 1.40, 8.90, 2.10];
+
+            return array_map(function ($mult, $i) use ($gameType) {
                 $color = 'red';
                 if ($mult >= 2.0) $color = 'green';
                 else if ($mult >= 1.5) $color = 'orange';
 
                 return [
                     'id' => $i + 1,
-                    'round_id' => 'CRASH_DEMO_' . ($i + 1),
+                    'round_id' => strtoupper($gameType) . '_DEMO_' . ($i + 1),
                     'crash_multiplier' => number_format($mult, 2),
                     'color' => $color,
                     'ended_at' => Carbon::now()->subMinutes(($i + 1) * 2)->format('H:i:s'),
