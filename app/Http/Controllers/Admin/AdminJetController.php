@@ -33,7 +33,7 @@ class AdminJetController extends Controller
         $today = now()->startOfDay();
         $todayBetsCount = JetBet::where('created_at', '>=', $today)->count();
         $todayBetsTotal = JetBet::where('created_at', '>=', $today)->sum('bet_amount');
-        $todayWinsTotal = JetBet::where('created_at', '>=', $today)->where('status', 'cashed_out')->sum(DB::raw('bet_amount + profit'));
+        $todayWinsTotal = JetBet::where('created_at', '>=', $today)->where('status', 'cashed_out')->selectRaw('SUM(bet_amount + profit) as total')->value('total') ?? 0;
         $houseProfit = $todayBetsTotal - $todayWinsTotal;
 
         $uniquePlayersCount = JetBet::where('created_at', '>=', $today)->distinct('user_id')->count();
@@ -117,7 +117,7 @@ class AdminJetController extends Controller
 
         $bets = $query->with('user')->orderBy('id', 'desc')->get();
         $totalStakes = $bets->sum('bet_amount');
-        $totalWinnings = $bets->where('status', 'cashed_out')->sum(DB::raw('bet_amount + profit'));
+        $totalWinnings = $bets->where('status', 'cashed_out')->sum(fn($b) => (float)$b->bet_amount + (float)$b->profit);
         $netProfit = $totalStakes - $totalWinnings;
 
         if ($request->query('export') === 'csv') {

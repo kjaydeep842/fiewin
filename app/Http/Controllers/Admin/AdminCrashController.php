@@ -32,7 +32,7 @@ class AdminCrashController extends Controller
         $today = now()->startOfDay();
         $todayBetsCount = CrashBet::where('created_at', '>=', $today)->count();
         $todayBetsTotal = CrashBet::where('created_at', '>=', $today)->sum('bet_amount');
-        $todayWinsTotal = CrashBet::where('created_at', '>=', $today)->where('status', 'cashed_out')->sum(DB::raw('bet_amount + profit'));
+        $todayWinsTotal = CrashBet::where('created_at', '>=', $today)->where('status', 'cashed_out')->selectRaw('SUM(bet_amount + profit) as total')->value('total') ?? 0;
         $houseProfit = $todayBetsTotal - $todayWinsTotal;
 
         $uniquePlayersCount = CrashBet::where('created_at', '>=', $today)->distinct('user_id')->count();
@@ -116,7 +116,7 @@ class AdminCrashController extends Controller
 
         $bets = $query->with('user')->orderBy('id', 'desc')->get();
         $totalStakes = $bets->sum('bet_amount');
-        $totalWinnings = $bets->where('status', 'cashed_out')->sum(DB::raw('bet_amount + profit'));
+        $totalWinnings = $bets->where('status', 'cashed_out')->sum(fn($b) => (float)$b->bet_amount + (float)$b->profit);
         $netProfit = $totalStakes - $totalWinnings;
 
         if ($request->query('export') === 'csv') {

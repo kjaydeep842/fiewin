@@ -1,5 +1,5 @@
 -- Fiewin Database Dump for InfinityFree / Shared Hosting
--- Exported on 2026-08-02 11:50:37
+-- Exported on 2026-08-02 13:54:12
 
 SET FOREIGN_KEY_CHECKS=0;
 
@@ -1503,7 +1503,7 @@ CREATE TABLE `deposit_requests` (
   CONSTRAINT `deposit_requests_merchant_account_id_foreign` FOREIGN KEY (`merchant_account_id`) REFERENCES `merchant_accounts` (`id`) ON DELETE SET NULL,
   CONSTRAINT `deposit_requests_rejected_by_foreign` FOREIGN KEY (`rejected_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL,
   CONSTRAINT `deposit_requests_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `deposit_requests` VALUES
 ('1', 'DEP20260802YE1MKX', '1', NULL, '500.00', 'upi', '329871239812', 'approved', 'Transferred via PhonePe', 'Audited & Verified via Admin Panel', '1', NULL, '2026-08-02 08:30:27', NULL, '2026-08-02 09:00:27', '2026-08-02 08:30:27', '2026-08-02 08:30:27'),
@@ -1514,7 +1514,13 @@ INSERT INTO `deposit_requests` VALUES
 ('6', 'DEP20260802HUQIZ3', '4', '8', '50000.00', 'upi_qr', '8332323233939', 'approved', NULL, 'Bulk Approved by Admin', '1', NULL, '2026-08-02 09:34:53', NULL, '2026-08-02 10:03:37', '2026-08-02 09:33:37', '2026-08-02 09:34:53'),
 ('7', 'DEP20260802JR7L5C', '1', '8', '500.00', 'upi', NULL, 'rejected', NULL, 'Bulk rejected by admin verification.', NULL, '1', NULL, '2026-08-02 09:42:45', '2026-08-02 10:11:18', '2026-08-02 09:41:18', '2026-08-02 09:42:45'),
 ('8', 'DEP20260802Z7J82M', '1', '8', '1000.00', 'bank_transfer', NULL, 'rejected', NULL, 'Bulk rejected by admin verification.', NULL, '1', NULL, '2026-08-02 09:42:45', '2026-08-02 10:11:18', '2026-08-02 09:41:18', '2026-08-02 09:42:45'),
-('9', 'DEP2026080290FACI', '4', '8', '500.00', 'upi', NULL, 'rejected', NULL, 'Bulk rejected by admin verification.', NULL, '1', NULL, '2026-08-02 09:42:45', '2026-08-02 10:12:07', '2026-08-02 09:42:07', '2026-08-02 09:42:45');
+('9', 'DEP2026080290FACI', '4', '8', '500.00', 'upi', NULL, 'rejected', NULL, 'Bulk rejected by admin verification.', NULL, '1', NULL, '2026-08-02 09:42:45', '2026-08-02 10:12:07', '2026-08-02 09:42:07', '2026-08-02 09:42:45'),
+('10', 'DEP20260802DVGISM', '5', '8', '100000.00', 'upi', NULL, 'pending', NULL, NULL, NULL, NULL, NULL, NULL, '2026-08-02 13:22:49', '2026-08-02 12:52:49', '2026-08-02 12:52:49'),
+('11', 'DEP20260802TNRRK7', '5', '8', '100000.00', 'upi', NULL, 'pending', NULL, NULL, NULL, NULL, NULL, NULL, '2026-08-02 13:22:50', '2026-08-02 12:52:50', '2026-08-02 12:52:50'),
+('12', 'DEP20260802OVG3EW', '5', '8', '100000.00', 'upi', NULL, 'pending', NULL, NULL, NULL, NULL, NULL, NULL, '2026-08-02 13:22:52', '2026-08-02 12:52:52', '2026-08-02 12:52:52'),
+('13', 'DEP20260802AWJONV', '5', '8', '100000.00', 'upi', '42424242424242', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, '2026-08-02 13:22:53', '2026-08-02 12:52:53', '2026-08-02 12:53:15'),
+('14', 'DEP202608027ZKOLF', '5', '8', '100000.00', 'upi', NULL, 'pending', NULL, NULL, NULL, NULL, NULL, NULL, '2026-08-02 13:24:30', '2026-08-02 12:54:30', '2026-08-02 12:54:30'),
+('15', 'DEP20260802XLZJEN', '5', '8', '100000.00', 'upi', '42424242424243', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, '2026-08-02 13:24:40', '2026-08-02 12:54:40', '2026-08-02 12:54:40');
 
 DROP TABLE IF EXISTS `deposit_verifications`;
 CREATE TABLE `deposit_verifications` (
@@ -1532,7 +1538,7 @@ CREATE TABLE `deposit_verifications` (
   KEY `deposit_verifications_admin_id_foreign` (`admin_id`),
   CONSTRAINT `deposit_verifications_admin_id_foreign` FOREIGN KEY (`admin_id`) REFERENCES `admins` (`id`) ON DELETE SET NULL,
   CONSTRAINT `deposit_verifications_deposit_request_id_foreign` FOREIGN KEY (`deposit_request_id`) REFERENCES `deposit_requests` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `deposit_verifications` VALUES
 ('1', '1', NULL, 'pending', 'pending_verification', 'User submitted UTR: 329871239812', '2026-08-02 08:30:27', '2026-08-02 08:30:27', '2026-08-02 08:30:27'),
@@ -1548,7 +1554,13 @@ INSERT INTO `deposit_verifications` VALUES
 ('11', '6', '1', 'pending', 'approved', 'Approved by Admin Super Admin. Note: Bulk Approved by Admin', '2026-08-02 09:34:53', '2026-08-02 09:34:53', '2026-08-02 09:34:53'),
 ('12', '9', '1', 'pending', 'rejected', 'Rejected by Admin Super Admin. Reason: Bulk rejected by admin verification.', '2026-08-02 09:42:45', '2026-08-02 09:42:45', '2026-08-02 09:42:45'),
 ('13', '8', '1', 'pending', 'rejected', 'Rejected by Admin Super Admin. Reason: Bulk rejected by admin verification.', '2026-08-02 09:42:45', '2026-08-02 09:42:45', '2026-08-02 09:42:45'),
-('14', '7', '1', 'pending', 'rejected', 'Rejected by Admin Super Admin. Reason: Bulk rejected by admin verification.', '2026-08-02 09:42:45', '2026-08-02 09:42:45', '2026-08-02 09:42:45');
+('14', '7', '1', 'pending', 'rejected', 'Rejected by Admin Super Admin. Reason: Bulk rejected by admin verification.', '2026-08-02 09:42:45', '2026-08-02 09:42:45', '2026-08-02 09:42:45'),
+('15', '13', NULL, 'pending', 'pending_verification', 'User submitted UTR: 42424242424242', '2026-08-02 12:53:15', '2026-08-02 12:53:15', '2026-08-02 12:53:15'),
+('16', '13', NULL, 'pending', 'pending_verification', 'User submitted UTR: 42424242424242', '2026-08-02 12:53:32', '2026-08-02 12:53:32', '2026-08-02 12:53:32'),
+('17', '13', NULL, 'pending', 'pending_verification', 'User submitted UTR: 42424242424242', '2026-08-02 12:53:34', '2026-08-02 12:53:34', '2026-08-02 12:53:34'),
+('18', '13', NULL, 'pending', 'pending_verification', 'User submitted UTR: 42424242424242', '2026-08-02 12:53:56', '2026-08-02 12:53:56', '2026-08-02 12:53:56'),
+('19', '15', NULL, 'pending', 'pending_verification', 'User submitted UTR: 42424242424243', '2026-08-02 12:54:40', '2026-08-02 12:54:40', '2026-08-02 12:54:40'),
+('20', '15', NULL, 'pending', 'pending_verification', 'User submitted UTR: 42424242424243', '2026-08-02 12:55:00', '2026-08-02 12:55:00', '2026-08-02 12:55:00');
 
 DROP TABLE IF EXISTS `deposits`;
 CREATE TABLE `deposits` (
@@ -1616,7 +1628,7 @@ CREATE TABLE `game_bets` (
   CONSTRAINT `game_bets_game_id_foreign` FOREIGN KEY (`game_id`) REFERENCES `games` (`id`) ON DELETE CASCADE,
   CONSTRAINT `game_bets_game_result_id_foreign` FOREIGN KEY (`game_result_id`) REFERENCES `game_results` (`id`) ON DELETE SET NULL,
   CONSTRAINT `game_bets_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=420 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=421 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `game_bets` VALUES
 ('1', '1', '1', '1', '20260710', '100.00', 'green', '0.00', '0.00', NULL, 'lost', NULL, '2026-07-30 09:42:45', '2026-07-30 09:42:45'),
@@ -2037,7 +2049,8 @@ INSERT INTO `game_bets` VALUES
 ('416', '4', '1', '290', '202608022100', '10.00', 'red', '0.00', '1.00', NULL, 'lost', NULL, '2026-08-02 09:30:18', '2026-08-02 09:31:31'),
 ('417', '4', '1', '293', '202608022104', '10.00', 'green', '0.00', '1.00', NULL, 'lost', NULL, '2026-08-02 09:32:06', '2026-08-02 09:32:31'),
 ('418', '4', '1', '294', '202608022105', '10000.00', 'red', '0.00', '1.00', NULL, 'lost', NULL, '2026-08-02 09:32:38', '2026-08-02 09:33:01'),
-('419', '4', '1', '297', '202608022115', '100.00', 'violet', '0.00', '1.00', NULL, 'lost', NULL, '2026-08-02 09:37:43', '2026-08-02 09:38:00');
+('419', '4', '1', '297', '202608022115', '100.00', 'violet', '0.00', '1.00', NULL, 'lost', NULL, '2026-08-02 09:37:43', '2026-08-02 09:38:00'),
+('420', '5', '1', '307', '202608022510', '10.00', 'green', '0.00', '1.00', NULL, 'lost', NULL, '2026-08-02 12:55:21', '2026-08-02 12:55:31');
 
 DROP TABLE IF EXISTS `game_categories`;
 CREATE TABLE `game_categories` (
@@ -2243,7 +2256,7 @@ CREATE TABLE `game_results` (
   KEY `game_results_game_id_foreign` (`game_id`),
   KEY `game_results_period_number_index` (`period_number`),
   CONSTRAINT `game_results_game_id_foreign` FOREIGN KEY (`game_id`) REFERENCES `games` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=306 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=308 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `game_results` VALUES
 ('1', '1', '20260710', '{\"colors\": [\"red\"], \"number\": 6, \"has_violet\": false, \"primary_color\": \"red\"}', NULL, NULL, 'settled', '0', '2026-07-30 09:22:45', '2026-07-30 09:42:45', '2026-07-30 09:42:45'),
@@ -2550,7 +2563,9 @@ INSERT INTO `game_results` VALUES
 ('302', '1', '202608022120', '{\"number\":7,\"colors\":[\"green\"],\"primary_color\":\"green\",\"has_violet\":false}', '626cd736321857fb77e26118369c485ed1726de6efcda2623ea3b71b67638a9d', 'iiXYnlFb063GeZFO', 'settled', '0', '2026-08-02 09:40:30', '2026-08-02 09:40:30', '2026-08-02 09:40:30'),
 ('303', '1', '202608022125', '{\"number\":4,\"colors\":[\"red\"],\"primary_color\":\"red\",\"has_violet\":false}', '60801220479bf9d0b08769ff7b9c227d639c8206c7f1dd4c8f825fa267fb40a7', 'ym5rJpcVZ3HeuPkM', 'settled', '0', '2026-08-02 09:43:01', '2026-08-02 09:43:01', '2026-08-02 09:43:01'),
 ('304', '1', '202608022373', '{\"number\":7,\"colors\":[\"green\"],\"primary_color\":\"green\",\"has_violet\":false}', '91ae40af3515e9ee3ca2eabb96b23a1ca08c67d9f3e8301fb905d916a05effdf', 'pjsbZ5DUcp2v3mxc', 'settled', '0', '2026-08-02 11:47:21', '2026-08-02 11:47:21', '2026-08-02 11:47:21'),
-('305', '1', '202608022374', '{\"number\":3,\"colors\":[\"green\"],\"primary_color\":\"green\",\"has_violet\":false}', 'a5f6a992762b9617c4c13d3209e3bc9517fe89be691c8b1353817bbfcfd15bca', 'wExN83w9HoA4UYBV', 'settled', '0', '2026-08-02 11:47:30', '2026-08-02 11:47:30', '2026-08-02 11:47:30');
+('305', '1', '202608022374', '{\"number\":3,\"colors\":[\"green\"],\"primary_color\":\"green\",\"has_violet\":false}', 'a5f6a992762b9617c4c13d3209e3bc9517fe89be691c8b1353817bbfcfd15bca', 'wExN83w9HoA4UYBV', 'settled', '0', '2026-08-02 11:47:30', '2026-08-02 11:47:30', '2026-08-02 11:47:30'),
+('306', '1', '202608022509', '{\"number\":9,\"colors\":[\"green\"],\"primary_color\":\"green\",\"has_violet\":false}', '59e5d5cde227f89264bda6389e8a022dbf2f1a1e5df552c1bd1f015663a149b3', 'GDv8nyonAGwIswaK', 'settled', '0', '2026-08-02 12:55:18', '2026-08-02 12:55:18', '2026-08-02 12:55:18'),
+('307', '1', '202608022510', '{\"number\":2,\"colors\":[\"red\"],\"primary_color\":\"red\",\"has_violet\":false}', 'fd25f62d5bf4d53afd2301aed9f3de413bad1aa2616c616eb55e2c90add1549f', '1vkp4gVAXfaoI7mN', 'settled', '0', '2026-08-02 12:55:31', '2026-08-02 12:55:31', '2026-08-02 12:55:31');
 
 DROP TABLE IF EXISTS `games`;
 CREATE TABLE `games` (
@@ -3138,7 +3153,7 @@ INSERT INTO `jet_rounds` VALUES
 ('482', 'JET_20260802080008', '2.54', '2026-08-02 08:38:14', '2026-08-02 08:38:19', 'CRASHED', '0', '2026-08-02 08:37:59', '2026-08-02 08:38:19'),
 ('483', 'JET_20260802080009', '6.19', '2026-08-02 08:38:39', '2026-08-02 08:38:54', 'CRASHED', '0', '2026-08-02 08:38:24', '2026-08-02 08:38:54'),
 ('484', 'JET_20260802080010', '150.00', '2026-08-02 08:39:09', '2026-08-02 08:47:32', 'CRASHED', '0', '2026-08-02 08:38:54', '2026-08-02 08:47:32'),
-('485', 'JET_20260802080011', '1.66', '2026-08-02 08:56:34', NULL, 'BETTING_OPEN', '0', '2026-08-02 08:56:34', '2026-08-02 08:56:34');
+('485', 'JET_20260802080011', '1.66', '2026-08-02 13:50:58', NULL, 'FLYING', '0', '2026-08-02 08:56:34', '2026-08-02 13:50:58');
 
 DROP TABLE IF EXISTS `jet_settings`;
 CREATE TABLE `jet_settings` (
@@ -3247,14 +3262,20 @@ CREATE TABLE `merchant_assignment_logs` (
   CONSTRAINT `merchant_assignment_logs_deposit_request_id_foreign` FOREIGN KEY (`deposit_request_id`) REFERENCES `deposit_requests` (`id`) ON DELETE CASCADE,
   CONSTRAINT `merchant_assignment_logs_merchant_account_id_foreign` FOREIGN KEY (`merchant_account_id`) REFERENCES `merchant_accounts` (`id`) ON DELETE CASCADE,
   CONSTRAINT `merchant_assignment_logs_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `merchant_assignment_logs` VALUES
 ('5', '5', '8', '1', '500.00', 'Load Balancer Assigned (Capacity: ₹490,000.00)', '2026-08-02 08:35:25', '2026-08-02 08:35:25', '2026-08-02 08:35:25'),
 ('6', '6', '8', '4', '50000.00', 'Load Balancer Assigned (Capacity: ₹489,500.00)', '2026-08-02 09:33:37', '2026-08-02 09:33:37', '2026-08-02 09:33:37'),
 ('7', '7', '8', '1', '500.00', 'Load Balancer Assigned (Capacity: ₹439,500.00)', '2026-08-02 09:41:18', '2026-08-02 09:41:18', '2026-08-02 09:41:18'),
 ('8', '8', '8', '1', '1000.00', 'Load Balancer Assigned (Capacity: ₹439,500.00)', '2026-08-02 09:41:18', '2026-08-02 09:41:18', '2026-08-02 09:41:18'),
-('9', '9', '8', '4', '500.00', 'Load Balancer Assigned (Capacity: ₹439,500.00)', '2026-08-02 09:42:07', '2026-08-02 09:42:07', '2026-08-02 09:42:07');
+('9', '9', '8', '4', '500.00', 'Load Balancer Assigned (Capacity: ₹439,500.00)', '2026-08-02 09:42:07', '2026-08-02 09:42:07', '2026-08-02 09:42:07'),
+('10', '10', '8', '5', '100000.00', 'Load Balancer Assigned (Capacity: ₹439,500.00)', '2026-08-02 12:52:49', '2026-08-02 12:52:49', '2026-08-02 12:52:49'),
+('11', '11', '8', '5', '100000.00', 'Load Balancer Assigned (Capacity: ₹439,500.00)', '2026-08-02 12:52:50', '2026-08-02 12:52:50', '2026-08-02 12:52:50'),
+('12', '12', '8', '5', '100000.00', 'Load Balancer Assigned (Capacity: ₹439,500.00)', '2026-08-02 12:52:52', '2026-08-02 12:52:52', '2026-08-02 12:52:52'),
+('13', '13', '8', '5', '100000.00', 'Load Balancer Assigned (Capacity: ₹439,500.00)', '2026-08-02 12:52:53', '2026-08-02 12:52:53', '2026-08-02 12:52:53'),
+('14', '14', '8', '5', '100000.00', 'Load Balancer Assigned (Capacity: ₹439,500.00)', '2026-08-02 12:54:30', '2026-08-02 12:54:30', '2026-08-02 12:54:30'),
+('15', '15', '8', '5', '100000.00', 'Load Balancer Assigned (Capacity: ₹439,500.00)', '2026-08-02 12:54:40', '2026-08-02 12:54:40', '2026-08-02 12:54:40');
 
 DROP TABLE IF EXISTS `migrations`;
 CREATE TABLE `migrations` (
@@ -3310,7 +3331,7 @@ CREATE TABLE `notifications` (
   PRIMARY KEY (`id`),
   KEY `notifications_user_id_foreign` (`user_id`),
   CONSTRAINT `notifications_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `notifications` VALUES
 ('1', '1', 'Deposit Request Created', 'Deposit Request #DEP20260802YE1MKX created for ₹500.00. Please transfer to assigned merchant within 30 minutes.', 'info', '0', NULL, '2026-08-02 08:30:27', '2026-08-02 08:30:27'),
@@ -3335,7 +3356,19 @@ INSERT INTO `notifications` VALUES
 ('20', '4', 'Deposit Request Created', 'Deposit Request #DEP2026080290FACI created for ₹500.00. Please transfer to assigned merchant within 30 minutes.', 'info', '0', NULL, '2026-08-02 09:42:07', '2026-08-02 09:42:07'),
 ('21', '4', 'Deposit Rejected', 'Your Deposit #DEP2026080290FACI of ₹500.00 was rejected. Reason: Bulk rejected by admin verification.', 'info', '0', NULL, '2026-08-02 09:42:45', '2026-08-02 09:42:45'),
 ('22', '1', 'Deposit Rejected', 'Your Deposit #DEP20260802Z7J82M of ₹1,000.00 was rejected. Reason: Bulk rejected by admin verification.', 'info', '0', NULL, '2026-08-02 09:42:45', '2026-08-02 09:42:45'),
-('23', '1', 'Deposit Rejected', 'Your Deposit #DEP20260802JR7L5C of ₹500.00 was rejected. Reason: Bulk rejected by admin verification.', 'info', '0', NULL, '2026-08-02 09:42:45', '2026-08-02 09:42:45');
+('23', '1', 'Deposit Rejected', 'Your Deposit #DEP20260802JR7L5C of ₹500.00 was rejected. Reason: Bulk rejected by admin verification.', 'info', '0', NULL, '2026-08-02 09:42:45', '2026-08-02 09:42:45'),
+('24', '5', 'Deposit Request Created', 'Deposit Request #DEP20260802DVGISM created for ₹100,000.00. Please transfer to assigned merchant within 30 minutes.', 'info', '0', NULL, '2026-08-02 12:52:49', '2026-08-02 12:52:49'),
+('25', '5', 'Deposit Request Created', 'Deposit Request #DEP20260802TNRRK7 created for ₹100,000.00. Please transfer to assigned merchant within 30 minutes.', 'info', '0', NULL, '2026-08-02 12:52:50', '2026-08-02 12:52:50'),
+('26', '5', 'Deposit Request Created', 'Deposit Request #DEP20260802OVG3EW created for ₹100,000.00. Please transfer to assigned merchant within 30 minutes.', 'info', '0', NULL, '2026-08-02 12:52:52', '2026-08-02 12:52:52'),
+('27', '5', 'Deposit Request Created', 'Deposit Request #DEP20260802AWJONV created for ₹100,000.00. Please transfer to assigned merchant within 30 minutes.', 'info', '0', NULL, '2026-08-02 12:52:53', '2026-08-02 12:52:53'),
+('28', '5', 'Deposit Payment Submitted', 'Payment proof & UTR #42424242424242 submitted for Deposit #DEP20260802AWJONV. Pending admin verification.', 'info', '0', NULL, '2026-08-02 12:53:15', '2026-08-02 12:53:15'),
+('29', '5', 'Deposit Payment Submitted', 'Payment proof & UTR #42424242424242 submitted for Deposit #DEP20260802AWJONV. Pending admin verification.', 'info', '0', NULL, '2026-08-02 12:53:32', '2026-08-02 12:53:32'),
+('30', '5', 'Deposit Payment Submitted', 'Payment proof & UTR #42424242424242 submitted for Deposit #DEP20260802AWJONV. Pending admin verification.', 'info', '0', NULL, '2026-08-02 12:53:34', '2026-08-02 12:53:34'),
+('31', '5', 'Deposit Payment Submitted', 'Payment proof & UTR #42424242424242 submitted for Deposit #DEP20260802AWJONV. Pending admin verification.', 'info', '0', NULL, '2026-08-02 12:53:56', '2026-08-02 12:53:56'),
+('32', '5', 'Deposit Request Created', 'Deposit Request #DEP202608027ZKOLF created for ₹100,000.00. Please transfer to assigned merchant within 30 minutes.', 'info', '0', NULL, '2026-08-02 12:54:30', '2026-08-02 12:54:30'),
+('33', '5', 'Deposit Request Created', 'Deposit Request #DEP20260802XLZJEN created for ₹100,000.00. Please transfer to assigned merchant within 30 minutes.', 'info', '0', NULL, '2026-08-02 12:54:40', '2026-08-02 12:54:40'),
+('34', '5', 'Deposit Payment Submitted', 'Payment proof & UTR #42424242424243 submitted for Deposit #DEP20260802XLZJEN. Pending admin verification.', 'info', '0', NULL, '2026-08-02 12:54:40', '2026-08-02 12:54:40'),
+('35', '5', 'Deposit Payment Submitted', 'Payment proof & UTR #42424242424243 submitted for Deposit #DEP20260802XLZJEN. Pending admin verification.', 'info', '0', NULL, '2026-08-02 12:55:00', '2026-08-02 12:55:00');
 
 DROP TABLE IF EXISTS `password_reset_tokens`;
 CREATE TABLE `password_reset_tokens` (
@@ -3538,13 +3571,15 @@ CREATE TABLE `users` (
   UNIQUE KEY `users_mobile_unique` (`mobile`),
   KEY `users_referred_by_foreign` (`referred_by`),
   CONSTRAINT `users_referred_by_foreign` FOREIGN KEY (`referred_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `users` VALUES
 ('1', 'Rahul Sharma', 'rahul@example.com', '9876543210', NULL, NULL, '$2y$12$qk59anygfL1zYP8Cdr9nEuyYxoPcfu6y.U/rpzQKsxceII96qP24i', 'EMPRNTDF', NULL, NULL, 'player', 'active', 'not_submitted', NULL, NULL, '2026-07-30 09:42:45', '2026-07-30 09:42:45'),
 ('2', 'Vikram Singh', 'vikram@example.com', '9876543211', NULL, NULL, '$2y$12$w8uAamQgryMcQvcw4jF.8OJaJRdidBHRVrZD75GWcD2lMDPSENKFu', 'TNZJTH6R', '1', NULL, 'player', 'active', 'not_submitted', NULL, NULL, '2026-07-30 09:42:45', '2026-07-30 09:42:45'),
 ('3', 'Amit Kumar', 'amit@example.com', '9876543212', NULL, NULL, '$2y$12$p2/VonpdhCMPCRNpE3HKkectQk9YErG3Lbys70fdnmZtNyA9i14mS', 'FERHTKSS', '2', NULL, 'player', 'active', 'not_submitted', NULL, NULL, '2026-07-30 09:42:45', '2026-07-30 09:42:45'),
-('4', 'jaydeep patel', 'kjaydeep842@gmail.com', '8238812890', NULL, NULL, '$2y$12$3m4.4T.gNbSVtFpFrgSrtuP6UlEfhOduFhwIQ4yoxYpFgIqwMwYMq', 'PTJRSO4S', NULL, NULL, 'player', 'active', 'not_submitted', NULL, 'qO7boI5syEnWlvY7qtd7mGSsqeuay6OzalHzuAUAEhMTKj7vD8x0fDKE0NZi', '2026-07-30 09:55:12', '2026-07-30 09:55:12');
+('4', 'jaydeep patel', 'kjaydeep842@gmail.com', '8238812890', NULL, NULL, '$2y$12$3m4.4T.gNbSVtFpFrgSrtuP6UlEfhOduFhwIQ4yoxYpFgIqwMwYMq', 'PTJRSO4S', NULL, NULL, 'player', 'active', 'not_submitted', NULL, 'qO7boI5syEnWlvY7qtd7mGSsqeuay6OzalHzuAUAEhMTKj7vD8x0fDKE0NZi', '2026-07-30 09:55:12', '2026-07-30 09:55:12'),
+('5', 'Ravi Khunt', 'donbhau111222@gmail.com', '8238731649', NULL, NULL, '$2y$12$Dj84nAoH3IHilpBEtXYMIeQ7p7M6.jBOGFD86qYFFfr/fJv8xl3H.', 'MFZ71WI6', NULL, NULL, 'player', 'active', 'not_submitted', NULL, NULL, '2026-08-02 12:48:19', '2026-08-02 12:48:19'),
+('6', 'Makawna Manav', 'makvanamanav28@gmail.com', '7859832684', NULL, NULL, '$2y$12$kLojKQZWspvrsmbBbw6UN.NUpbj5Pk0TUeBI6oy28f0Ma8bbcWH1q', 'VVANZCWE', NULL, NULL, 'player', 'active', 'not_submitted', NULL, NULL, '2026-08-02 12:53:24', '2026-08-02 12:53:24');
 
 DROP TABLE IF EXISTS `wallet_transactions`;
 CREATE TABLE `wallet_transactions` (
@@ -3562,7 +3597,7 @@ CREATE TABLE `wallet_transactions` (
   KEY `wallet_transactions_wallet_id_foreign` (`wallet_id`),
   KEY `wallet_transactions_reference_id_index` (`reference_id`),
   CONSTRAINT `wallet_transactions_wallet_id_foreign` FOREIGN KEY (`wallet_id`) REFERENCES `wallets` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=912 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=913 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `wallet_transactions` VALUES
 ('1', '1', '-10.0000', 'main', 'bet', 'BET_20260730-1173', 'Bet on Fast Parity Period #20260730-1173', '2490.0000', '2026-07-30 09:46:50', '2026-07-30 09:46:50'),
@@ -4471,7 +4506,8 @@ INSERT INTO `wallet_transactions` VALUES
 ('908', '4', '-10.0000', 'main', 'bet', 'BET_202608022104', 'Bet on Fast Parity Period #202608022104', '12288687.8100', '2026-08-02 09:32:06', '2026-08-02 09:32:06'),
 ('909', '4', '-10000.0000', 'main', 'bet', 'BET_202608022105', 'Bet on Fast Parity Period #202608022105', '12278687.8100', '2026-08-02 09:32:38', '2026-08-02 09:32:38'),
 ('910', '4', '50000.0000', 'main', 'deposit', 'DEP20260802HUQIZ3', 'Manual Deposit Approval #DEP20260802HUQIZ3 (UTR: 8332323233939)', '12328687.8100', '2026-08-02 09:34:53', '2026-08-02 09:34:53'),
-('911', '4', '-100.0000', 'main', 'bet', 'BET_202608022115', 'Bet on Fast Parity Period #202608022115', '12328587.8100', '2026-08-02 09:37:43', '2026-08-02 09:37:43');
+('911', '4', '-100.0000', 'main', 'bet', 'BET_202608022115', 'Bet on Fast Parity Period #202608022115', '12328587.8100', '2026-08-02 09:37:43', '2026-08-02 09:37:43'),
+('912', '5', '-10.0000', 'main', 'bet', 'BET_202608022510', 'Bet on Fast Parity Period #202608022510', '40.0000', '2026-08-02 12:55:21', '2026-08-02 12:55:21');
 
 DROP TABLE IF EXISTS `wallets`;
 CREATE TABLE `wallets` (
@@ -4489,13 +4525,15 @@ CREATE TABLE `wallets` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `wallets_user_id_unique` (`user_id`),
   CONSTRAINT `wallets_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `wallets` VALUES
 ('1', '1', '6626.9300', '30.0000', '450.0000', '1500.0000', '0.0000', '2920.4300', 'active', '2026-07-30 09:42:45', '2026-08-02 09:26:34'),
 ('2', '2', '50.0000', '20.0000', '0.0000', '0.0000', '0.0000', '0.0000', 'active', '2026-07-30 09:42:45', '2026-07-30 09:42:45'),
 ('3', '3', '50.0000', '20.0000', '0.0000', '0.0000', '0.0000', '0.0000', 'active', '2026-07-30 09:42:45', '2026-07-30 09:42:45'),
-('4', '4', '12328587.8100', '270.0000', '0.0000', '54150.0000', '0.0000', '22487987.8100', 'active', '2026-07-30 09:55:12', '2026-08-02 09:37:43');
+('4', '4', '12328587.8100', '270.0000', '0.0000', '54150.0000', '0.0000', '22487987.8100', 'active', '2026-07-30 09:55:12', '2026-08-02 09:37:43'),
+('5', '5', '40.0000', '20.0000', '0.0000', '0.0000', '0.0000', '0.0000', 'active', '2026-08-02 12:48:19', '2026-08-02 12:55:21'),
+('6', '6', '50.0000', '20.0000', '0.0000', '0.0000', '0.0000', '0.0000', 'active', '2026-08-02 12:53:24', '2026-08-02 12:53:24');
 
 DROP TABLE IF EXISTS `withdrawals`;
 CREATE TABLE `withdrawals` (
