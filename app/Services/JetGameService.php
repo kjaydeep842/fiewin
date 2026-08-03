@@ -77,42 +77,47 @@ class JetGameService
             ];
         }
 
-        // Dedicated Jet Bots
-        $jetBots = [
-            ['name' => 'Captain_Ace', 'bet' => 450, 'cashout_target' => 1.55],
-            ['name' => 'SkyWalker', 'bet' => 800, 'cashout_target' => 2.30],
-            ['name' => 'JetPro_99', 'bet' => 250, 'cashout_target' => 1.75],
-            ['name' => 'Wingman_X', 'bet' => 120, 'cashout_target' => 3.10],
-            ['name' => 'Supersonic', 'bet' => 60, 'cashout_target' => 1.30],
+        // Dynamic Jet Bot Pool seeded by round ID
+        $botPoolSeed = (int)$round->id;
+        $botNames = [
+            'Captain_Ace', 'SkyWalker', 'JetPro_99', 'Wingman_X', 'Supersonic',
+            'Maverick', 'TopGun', 'Pilot_Raj', 'FlightMaster', 'AirHawk',
+            'CloudRider', 'AeroKing', 'Rohan_Jet', 'Siddharth_99', 'Vikram_Fly',
+            'Ananya_Sky', 'Manish_Pro', 'Suraj_Speed', 'Kavita_Ace', 'Rakesh_VIP'
         ];
+        $betAmounts = [150, 250, 400, 600, 900, 1200, 1800, 2200, 3000, 4500];
 
-        foreach ($jetBots as $index => $bot) {
+        for ($i = 0; $i < 12; $i++) {
+            $name = $botNames[($botPoolSeed + $i * 3) % count($botNames)];
+            $bet = $betAmounts[($botPoolSeed + $i * 7) % count($betAmounts)];
+            $target = round(1.15 + ((($botPoolSeed + $i * 11) % 40) * 0.15), 2); // Target multipliers from 1.15x to 7.00x
+
             $botStatus = 'flying';
             $cashoutMult = null;
             $profit = 0.00;
 
             if ($status === 'FLYING') {
-                if ($currentMultiplier >= $bot['cashout_target']) {
+                if ($currentMultiplier >= $target) {
                     $botStatus = 'cashed_out';
-                    $cashoutMult = number_format($bot['cashout_target'], 2);
-                    $profit = number_format($bot['bet'] * ($bot['cashout_target'] - 1), 2);
+                    $cashoutMult = number_format($target, 2);
+                    $profit = number_format($bet * ($target - 1), 2);
                 }
             } elseif ($status === 'CRASHED') {
                 $finalCrash = (float)$round->crash_multiplier;
-                if ($finalCrash >= $bot['cashout_target']) {
+                if ($finalCrash >= $target) {
                     $botStatus = 'cashed_out';
-                    $cashoutMult = number_format($bot['cashout_target'], 2);
-                    $profit = number_format($bot['bet'] * ($bot['cashout_target'] - 1), 2);
+                    $cashoutMult = number_format($target, 2);
+                    $profit = number_format($bet * ($target - 1), 2);
                 } else {
                     $botStatus = 'lost';
                 }
             }
 
             $liveBetsList[] = [
-                'id' => 'BOT_JET_' . ($index + 1),
-                'username' => $bot['name'],
-                'bet_amount' => number_format($bot['bet'], 2),
-                'auto_cashout' => number_format($bot['cashout_target'], 2),
+                'id' => 'BOT_JET_' . ($i + 1),
+                'username' => $name,
+                'bet_amount' => number_format($bet, 2),
+                'auto_cashout' => number_format($target, 2),
                 'cashout_multiplier' => $cashoutMult,
                 'profit' => $profit,
                 'status' => $botStatus,

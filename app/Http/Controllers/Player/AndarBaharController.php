@@ -77,17 +77,21 @@ class AndarBaharController extends Controller
         $settings = AndarBaharSetting::getSettings();
         $user = auth()->user();
 
-        $roundSeconds = $settings->round_seconds > 0 ? $settings->round_seconds : 60;
         $startedAt = $currentRound->started_at ? $currentRound->started_at->timestamp : time();
         $elapsed = max(0, time() - $startedAt);
-        $countdown = max(0, $roundSeconds - $elapsed);
-        $bettingOpen = ($countdown > $settings->animation_seconds);
+        
+        // 60-second display countdown (60 down to 0)
+        $countdown = max(0, 60 - $elapsed);
+        $bettingOpen = ($countdown > 10); // Betting open for first 50 seconds (60 down to 10)
 
-        // If countdown reaches 0 or betting phase is over, trigger settlement for current round
-        $lastResult = null;
-        if ($countdown <= $settings->animation_seconds) {
-            $lastResult = $this->gameService->settleRound($currentRound);
+        // Trigger settlement calculations on server when elapsed >= 50s
+        $settledResult = null;
+        if ($elapsed >= 50) {
+            $settledResult = $this->gameService->settleRound($currentRound);
         }
+
+        // Expose last_result to frontend ONLY when countdown reaches 0 (elapsed >= 60s)
+        $lastResult = ($elapsed >= 60) ? $settledResult : null;
 
         $history = $this->historyService->getRecentResults(30);
         $myOrders = $this->historyService->getUserOrders($user->id, 20);

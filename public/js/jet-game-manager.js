@@ -55,6 +55,11 @@ class JetGameManager {
                     const progress = Math.min((mult - 1) / 10, 1);
                     this.renderer.renderFrame(progress, status);
 
+                    if (this.serverState.live_bets && status === 'FLYING') {
+                        this.serverState.current_multiplier = mult.toFixed(2);
+                        this.renderLiveBets(this.serverState.live_bets);
+                    }
+
                     if (this.userBet && this.userBet.status === 'flying' && status === 'FLYING') {
                         const cashoutBtn = document.getElementById('cashoutJetBtn');
                         if (cashoutBtn) {
@@ -160,7 +165,9 @@ class JetGameManager {
         const currentRoundIdEl = document.getElementById('jetCurrentRoundId');
 
         if (currentRoundIdEl && roundObj.round_id) {
-            currentRoundIdEl.textContent = roundObj.round_id;
+            let rId = String(roundObj.round_id);
+            currentRoundIdEl.textContent = (rId.length > 12) ? rId.slice(-8) : rId;
+            if (currentRoundIdEl.parentElement) currentRoundIdEl.parentElement.title = 'Period #' + rId;
         }
 
         if (userBalDisplay && state.user_balance !== undefined) {
@@ -271,7 +278,11 @@ class JetGameManager {
             const payout = (stake * mult).toFixed(2);
             const profit = (payout - stake).toFixed(2);
 
-            if (roundIdEl) roundIdEl.textContent = bet.round_id || '-';
+            if (roundIdEl) {
+                let rId = String(bet.round_id || '-');
+                roundIdEl.textContent = (rId.length > 12) ? rId.slice(-8) : rId;
+                if (roundIdEl.parentElement) roundIdEl.parentElement.title = 'Period #' + rId;
+            }
             if (stakeEl) stakeEl.textContent = '₹' + bet.bet_amount;
             if (profitEl) profitEl.textContent = '+₹' + profit;
             if (payoutEl) payoutEl.textContent = '₹' + payout;
@@ -339,24 +350,74 @@ class JetGameManager {
 
     renderLiveBets(bets) {
         const container = document.getElementById('jetLiveBetsList');
-        if (!container) return;
-        container.innerHTML = bets.map(b => {
-            const stake = b.bet_amount ?? '0.00';
-            const autoCo = b.auto_cashout ? `• Auto: ${b.auto_cashout}x` : '';
-            const rightCol = b.cashout_multiplier
-                ? `${b.cashout_multiplier}x (+\u20b9${b.profit ?? '0.00'})`
-                : (b.status ?? 'flying');
+        if (!container || !bets) return;
+
+        const currentMult = parseFloat(this.serverState?.current_multiplier || '1.00');
+        const status = this.serverState?.round?.status || 'BETTING_OPEN';
+
+        let totalStake = 0;
+        let cashedOutCount = 0;
+
+        const avatarColors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+
+        const rowsHtml = bets.map(b => {
+            const stakeNum = parseFloat(String(b.bet_amount).replace(/,/g, '')) || 0;
+            totalStake += stakeNum;
+
+            const autoCoVal = b.auto_cashout ? parseFloat(b.auto_cashout) : null;
+            const autoCoText = autoCoVal ? ` • Auto: ${autoCoVal.toFixed(2)}x` : '';
+
+            let isCashedOut = b.status === 'cashed_out';
+            let cashoutMult = b.cashout_multiplier ? parseFloat(b.cashout_multiplier) : null;
+
+            // Realtime continuous cashout sync
+            if (status === 'FLYING' && !isCashedOut && autoCoVal && currentMult >= autoCoVal) {
+                isCashedOut = true;
+                cashoutMult = autoCoVal;
+            }
+
+            let badgeHtml = '';
+            if (isCashedOut && cashoutMult) {
+                cashedOutCount++;
+                const profitNum = b.profit ? parseFloat(String(b.profit).replace(/,/g, '')) : (stakeNum * (cashoutMult - 1));
+                badgeHtml = `<span class="badge bg-success px-2 py-1 rounded-pill shadow-sm" style="font-size: 0.72rem;"><i class="bi bi-trophy-fill me-1 text-warning"></i>${cashoutMult.toFixed(2)}x (+₹${profitNum.toFixed(2)})</span>`;
+            } else if (status === 'CRASHED' && !isCashedOut) {
+                badgeHtml = `<span class="badge bg-secondary px-2 py-1 rounded-pill opacity-75" style="font-size: 0.70rem;">CRASHED</span>`;
+            } else {
+                badgeHtml = `<span class="badge bg-warning text-dark px-2 py-1 rounded-pill" style="font-size: 0.70rem;"><i class="bi bi-airplane-fill me-1"></i>FLYING</span>`;
+            }
+
+            let hash = 0;
+            const nameStr = b.username || 'Player';
+            for (let i = 0; i < nameStr.length; i++) hash = (hash << 5) - hash + nameStr.charCodeAt(i);
+            const avatarBg = avatarColors[Math.abs(hash) % avatarColors.length];
+
             return `
-            <div class="d-flex justify-content-between align-items-center border-bottom py-2">
-                <div>
-                    <span class="fw-bold d-block">${b.username ?? 'Player'}</span>
-                    <small class="text-muted">Stake \u20b9${stake} ${autoCo}</small>
+            <div class="d-flex justify-content-between align-items-center border-bottom py-2 px-1">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm" style="width: 28px; height: 28px; background: ${avatarBg}; font-size: 0.72rem;">
+                        ${nameStr.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <span class="fw-bold d-block text-dark" style="font-size: 0.82rem;">${nameStr}</span>
+                        <small class="text-muted" style="font-size: 0.68rem;">Stake ₹${stakeNum.toFixed(2)}${autoCoText}</small>
+                    </div>
                 </div>
-                <span class="${b.status === 'cashed_out' ? 'text-success fw-bold' : 'text-muted'}">
-                    ${rightCol}
-                </span>
+                <div>
+                    ${badgeHtml}
+                </div>
             </div>`;
         }).join('');
+
+        const summaryHtml = `
+            <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded-3 mb-2 small fw-semibold text-secondary border">
+                <span><i class="bi bi-people-fill me-1 text-primary"></i>Bets: <strong class="text-dark">${bets.length}</strong></span>
+                <span><i class="bi bi-wallet2 me-1 text-warning"></i>Pool: <strong class="text-dark">₹${totalStake.toLocaleString('en-IN')}</strong></span>
+                <span><i class="bi bi-trophy-fill me-1 text-success"></i>Cashed: <strong class="text-success">${cashedOutCount}</strong></span>
+            </div>
+        `;
+
+        container.innerHTML = summaryHtml + rowsHtml;
     }
 
     renderMyOrders(orders) {

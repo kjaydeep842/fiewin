@@ -137,6 +137,7 @@
         'jet'         => ['label' => 'HOT',  'class' => 'bg-danger'],
         'spin_wheel'  => ['label' => '50X',  'class' => 'bg-info text-dark'],
         'dice'        => ['label' => '5.5X', 'class' => 'bg-success'],
+        'andar_bahar' => ['label' => 'HOT',  'class' => 'bg-primary'],
     ];
     // Icon color per game code
     $gameIconColors = [
@@ -147,6 +148,7 @@
         'jet'         => 'text-danger',
         'spin_wheel'  => 'text-info',
         'dice'        => 'text-primary',
+        'andar_bahar' => 'text-primary',
     ];
     @endphp
 
@@ -200,24 +202,6 @@
     </div>
 </div>
 
-<!-- Live Winners Card Table -->
-<div class="gh-card p-3">
-    <div class="d-flex align-items-center justify-content-between mb-2">
-        <h6 class="fw-bold text-dark mb-0"><i class="bi bi-trophy-fill text-warning me-1"></i>Recent Winners</h6>
-        <span class="badge bg-success bg-opacity-10 text-success" style="font-size: 0.65rem;">LIVE</span>
-    </div>
-    <div class="table-responsive">
-        <table class="table table-borderless table-sm align-middle text-nowrap mb-0" style="font-size: 0.8rem;">
-            <tbody>
-                @foreach($liveWinners as $w)
-                    <tr class="border-bottom border-light">
-                        <td class="text-secondary"><i class="bi bi-person-circle me-1"></i>{{ $w['user'] }}</td>
-                        <td><span class="badge bg-light text-primary border" style="font-size: 0.65rem;">{{ $w['game'] }}</span></td>
-                        <td class="fw-bold text-success">+₹{{ number_format($w['amount'], 2) }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-</div>
+<!-- Live Winners Continuous Ticker Partial -->
+@include('partials.recent_winners')
 @endsection

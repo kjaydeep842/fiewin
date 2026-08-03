@@ -83,12 +83,32 @@
                 padding-bottom: 85px !important;
             }
             canvas#jetCanvas, canvas#crashCanvas {
-                height: 250px !important;
+                height: 240px !important;
             }
             .btn-lg {
                 padding-top: 12px !important;
                 padding-bottom: 12px !important;
                 font-size: 1rem !important;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .gh-main-content {
+                padding: 8px !important;
+            }
+            canvas#jetCanvas, canvas#crashCanvas {
+                height: 200px !important;
+            }
+            .btn-lg {
+                font-size: 0.92rem !important;
+                padding-top: 10px !important;
+                padding-bottom: 10px !important;
+            }
+            .modal-content {
+                padding: 10px !important;
+            }
+            .table-responsive {
+                font-size: 0.78rem !important;
             }
         }
 
@@ -122,9 +142,21 @@
             min-width: 0;
         }
 
-        /* On very small screens hide the brand text, keep logo icon */
-        @media (max-width: 360px) {
+        /* On mobile screens hide the brand text to give full space for wallet balance and deposit button */
+        @media (max-width: 576px) {
             .gh-brand-text { display: none !important; }
+            .gh-top-header { padding: 6px 8px !important; gap: 4px !important; }
+            .gh-top-right { gap: 4px !important; flex: 1; justify-content: flex-end; }
+            .gh-wallet-pill { max-width: 170px !important; padding: 4px 8px !important; }
+            .gh-wallet-pill #topWalletBalance { font-size: 0.75rem !important; }
+            .gh-deposit-btn { padding: 4px 8px !important; font-size: 0.68rem !important; }
+            #soundToggleBtn { width: 30px !important; height: 30px !important; }
+        }
+
+        @media (max-width: 350px) {
+            .gh-wallet-pill { max-width: 140px !important; padding: 3px 6px !important; }
+            .gh-wallet-pill #topWalletBalance { font-size: 0.68rem !important; }
+            .gh-deposit-btn { padding: 3px 6px !important; font-size: 0.65rem !important; }
         }
 
         .gh-top-right {

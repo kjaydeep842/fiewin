@@ -17,7 +17,7 @@ class PaymentMethodSeeder extends Seeder
                 'max_amount' => 100000.00,
                 'bonus_percentage' => 5.00,
                 'instructions' => 'Instant auto credit via Netbanking / UPI / Cards.',
-                'is_active' => true,
+                'is_active' => false,
             ],
             [
                 'name' => 'PhonePe Direct Gateway',
@@ -26,7 +26,7 @@ class PaymentMethodSeeder extends Seeder
                 'max_amount' => 50000.00,
                 'bonus_percentage' => 5.00,
                 'instructions' => 'Pay via PhonePe app / UPI intent.',
-                'is_active' => true,
+                'is_active' => false,
             ],
             [
                 'name' => 'UPI Fast QR Deposit',

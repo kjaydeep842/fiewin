@@ -20,6 +20,8 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
 
+Route::get('/recent-winners/feed', [HomeController::class, 'liveWinnersFeed'])->name('recent-winners.feed');
+
 // Player Application Routes
 Route::middleware('auth')->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');

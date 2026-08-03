@@ -55,8 +55,53 @@
         transition: all 0.3s ease;
         user-select: none;
     }
-    .playing-card.red { color: #DC2626; }
-    .playing-card.black { color: #0F172A; }
+    .mini-deal-card {
+        width: 40px;
+        height: 56px;
+        background: #FFFFFF;
+        border-radius: 6px;
+        border: 1.5px solid #CBD5E1;
+        display: inline-flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 2px 4px;
+        font-weight: 800;
+        font-size: 0.78rem;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+        user-select: none;
+        position: relative;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .mini-deal-card.red, .playing-card.red { color: #DC2626; }
+    .mini-deal-card.black, .playing-card.black { color: #0F172A; }
+    
+    .mini-deal-card.card-matching-win {
+        border: 2.5px solid #F59E0B !important;
+        background: #FEF3C7 !important;
+        box-shadow: 0 0 16px #F59E0B, 0 0 6px #F59E0B !important;
+        transform: scale(1.15);
+        z-index: 10;
+        animation: pulseMatchingCard 0.6s infinite alternate;
+    }
+    @keyframes pulseMatchingCard {
+        0% { transform: scale(1.12); box-shadow: 0 0 10px #F59E0B; }
+        100% { transform: scale(1.22); box-shadow: 0 0 22px #F59E0B; }
+    }
+    
+    .card-matched-badge {
+        position: absolute;
+        top: -8px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, #F59E0B, #D97706);
+        color: #FFF;
+        font-size: 0.55rem;
+        font-weight: 900;
+        padding: 1px 4px;
+        border-radius: 4px;
+        white-space: nowrap;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
     .playing-card-lg {
         width: 80px;
         height: 112px;
@@ -234,26 +279,35 @@
 
     <!-- Dealing Table Stage -->
     <div class="ab-dealing-stage mb-3">
-        <div class="text-center mb-2">
+        <div class="d-flex justify-content-between align-items-center mb-2">
             <small class="text-secondary fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 1px;">
                 <i class="bi bi-play-circle-fill text-warning me-1"></i>LIVE DEALING TABLE
             </small>
+            <div id="dealStatusText" class="badge bg-secondary bg-opacity-50 text-secondary border border-secondary" style="font-size: 0.65rem;">
+                WAITING FOR BETS
+            </div>
         </div>
         <div class="row g-2">
             <!-- Andar Dealing Box -->
             <div class="col-6">
-                <div id="sideBoxAndar" class="side-box side-box-andar text-center">
-                    <div class="fw-bold text-info mb-1" style="font-size: 0.8rem;">ANDAR (LEFT)</div>
-                    <div id="cardsAndar" class="d-flex flex-wrap justify-content-center gap-1">
+                <div id="sideBoxAndar" class="side-box side-box-andar text-center position-relative">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-bold text-info" style="font-size: 0.78rem;">ANDAR (LEFT)</span>
+                        <span id="countAndarBadge" class="badge bg-info bg-opacity-20 text-info border border-info" style="font-size: 0.62rem;">0 Cards</span>
+                    </div>
+                    <div id="cardsAndar" class="d-flex flex-wrap justify-content-center gap-1" style="min-height: 60px;">
                         <small class="text-secondary opacity-75 my-3" id="andarPlaceholder">Waiting for deal...</small>
                     </div>
                 </div>
             </div>
             <!-- Bahar Dealing Box -->
             <div class="col-6">
-                <div id="sideBoxBahar" class="side-box side-box-bahar text-center">
-                    <div class="fw-bold text-danger mb-1" style="font-size: 0.8rem;">BAHAR (RIGHT)</div>
-                    <div id="cardsBahar" class="d-flex flex-wrap justify-content-center gap-1">
+                <div id="sideBoxBahar" class="side-box side-box-bahar text-center position-relative">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-bold text-danger" style="font-size: 0.78rem;">BAHAR (RIGHT)</span>
+                        <span id="countBaharBadge" class="badge bg-danger bg-opacity-20 text-danger border border-danger" style="font-size: 0.62rem;">0 Cards</span>
+                    </div>
+                    <div id="cardsBahar" class="d-flex flex-wrap justify-content-center gap-1" style="min-height: 60px;">
                         <small class="text-secondary opacity-75 my-3" id="baharPlaceholder">Waiting for deal...</small>
                     </div>
                 </div>
@@ -505,6 +559,30 @@
     </div>
 </div>
 
+<!-- Round Result Winner Modal -->
+<div class="modal fade" id="roundResultModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 340px; margin: auto;">
+        <div class="modal-content rounded-4 border-0 shadow bg-dark text-white overflow-hidden text-center">
+            <div id="resultModalHeader" class="p-3 text-white" style="background: linear-gradient(135deg, #1E88E5, #1565C0);">
+                <div id="resultModalIcon" class="fs-1 mb-1"><i class="bi bi-trophy-fill text-warning"></i></div>
+                <h5 id="resultModalTitle" class="fw-bold mb-0">ANDAR WON!</h5>
+            </div>
+            <div class="modal-body p-3">
+                <p id="resultModalSubtext" class="text-secondary small mb-2">
+                    Matching Card <span id="resultModalWinningCard" class="fw-bold text-warning fs-6">4♣</span> landed on <strong id="resultModalWinnerSide" class="text-info">ANDAR</strong>!
+                </p>
+                <div id="resultModalAmountBox" class="p-2 bg-dark border border-success rounded-3 mb-3">
+                    <small class="text-secondary d-block">TOTAL WINNINGS</small>
+                    <h3 id="resultModalAmount" class="fw-bold text-success mb-0 font-monospace">+₹0.00</h3>
+                </div>
+                <button type="button" class="btn btn-primary w-100 py-2 rounded-pill fw-bold" data-bs-dismiss="modal">
+                    CONTINUE
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     let currentOdds = { andar: 2.0, bahar: 2.0, tie: 9.0 };
     let selectedOption = 'andar';
@@ -536,10 +614,15 @@
 
                 let statusBadge = document.getElementById('bettingStatusBadge');
 
-                if (data.countdown <= 15) {
+                if (data.countdown <= 10 && data.countdown > 0) {
                     timerElem.classList.add('ab-timer-warning');
                     statusBadge.className = 'badge bg-danger mt-1';
-                    statusBadge.innerText = 'BETTING CLOSED - DEALING';
+                    statusBadge.innerText = 'BETTING CLOSED';
+                    toggleBetButtons(false);
+                } else if (data.countdown === 0) {
+                    timerElem.classList.add('ab-timer-warning');
+                    statusBadge.className = 'badge bg-danger mt-1';
+                    statusBadge.innerText = 'BETTING CLOSED - DEALING CARDS';
                     toggleBetButtons(false);
                 } else {
                     timerElem.classList.remove('ab-timer-warning');
@@ -568,11 +651,15 @@
                 renderMyOrders(data.my_orders);
                 renderEveryoneOrders(data.everyone_orders);
 
-                // Animate Dealing when round settled / dealing phase
-                if (data.last_result && !isDealingAnimated && data.countdown <= 15) {
+                // Animate Dealing ONLY when countdown reaches 0 (second is 0)!
+                if (data.countdown === 0 && data.last_result && !isDealingAnimated) {
                     animateDealingSequence(data.last_result);
-                } else if (data.countdown > 15) {
+                } else if (data.countdown > 0) {
                     isDealingAnimated = false; // Reset for next round
+                    if (currentDealInterval) {
+                        clearInterval(currentDealInterval);
+                        currentDealInterval = null;
+                    }
                     resetDealingStage();
                 }
             })
@@ -675,28 +762,107 @@
         });
     }
 
+    class AndarSoundEngine {
+        constructor() {
+            this.audioCtx = null;
+        }
+        init() {
+            if (!this.audioCtx) {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (AC) this.audioCtx = new AC();
+            }
+        }
+        playTone(freq, type, duration, gainVal = 0.08) {
+            try {
+                this.init();
+                if (!this.audioCtx) return;
+                const osc = this.audioCtx.createOscillator();
+                const gain = this.audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+                gain.gain.setValueAtTime(gainVal, this.audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, this.audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(this.audioCtx.destination);
+                osc.start();
+                osc.stop(this.audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+        playCardFlip() {
+            this.playTone(650, 'sine', 0.05, 0.08);
+            setTimeout(() => this.playTone(850, 'triangle', 0.05, 0.06), 30);
+        }
+        playWinSound() {
+            this.playTone(523.25, 'sine', 0.15, 0.12);
+            setTimeout(() => this.playTone(659.25, 'sine', 0.15, 0.12), 120);
+            setTimeout(() => this.playTone(783.99, 'sine', 0.35, 0.15), 240);
+        }
+        playLossSound() {
+            this.playTone(240, 'sawtooth', 0.2, 0.12);
+            setTimeout(() => this.playTone(180, 'sawtooth', 0.3, 0.12), 150);
+        }
+    }
+    const andarSound = new AndarSoundEngine();
+
+    let currentDealInterval = null;
+    let lastShownModalPeriod = null;
+
     function animateDealingSequence(resultData) {
         if (!resultData || !resultData.deal_sequence) return;
         isDealingAnimated = true;
 
+        if (currentDealInterval) {
+            clearInterval(currentDealInterval);
+            currentDealInterval = null;
+        }
+
         let andarBox = document.getElementById('cardsAndar');
         let baharBox = document.getElementById('cardsBahar');
-        andarBox.innerHTML = '';
-        baharBox.innerHTML = '';
+        let countAndarBadge = document.getElementById('countAndarBadge');
+        let countBaharBadge = document.getElementById('countBaharBadge');
+        let dealStatusText = document.getElementById('dealStatusText');
 
         let sequence = resultData.deal_sequence;
-        let index = 0;
+        if (sequence.length === 0) return;
 
-        let interval = setInterval(() => {
+        andarBox.innerHTML = '';
+        baharBox.innerHTML = '';
+        let andarCount = 0;
+        let baharCount = 0;
+
+        if (countAndarBadge) countAndarBadge.innerText = '0 Cards';
+        if (countBaharBadge) countBaharBadge.innerText = '0 Cards';
+
+        if (dealStatusText) {
+            dealStatusText.className = 'badge bg-warning text-dark';
+            dealStatusText.innerText = '⚡ CARDS DEALING...';
+        }
+
+        let index = 0;
+        let dealIntervalMs = 350; // Throw cards one by one smoothly when countdown reaches 00:00
+
+        currentDealInterval = setInterval(() => {
             if (index >= sequence.length) {
-                clearInterval(interval);
-                // Glow winning side
+                clearInterval(currentDealInterval);
+                currentDealInterval = null;
+
                 let winner = (resultData.winner || '').toLowerCase();
+                let winningCard = resultData.winning_card || '';
+
+                if (dealStatusText) {
+                    dealStatusText.className = (winner === 'andar') ? 'badge bg-primary' : ((winner === 'bahar') ? 'badge bg-danger' : 'badge bg-warning text-dark');
+                    dealStatusText.innerText = '🎉 WINNER: ' + winner.toUpperCase() + ' (' + winningCard + ')';
+                }
+
+                // Highlight winning side
                 if (winner === 'andar') {
                     document.getElementById('sideBoxAndar').classList.add('winner-glow');
                 } else if (winner === 'bahar') {
                     document.getElementById('sideBoxBahar').classList.add('winner-glow');
                 }
+
+                andarSound.playWinSound();
+                checkAndShowUserResultModal(resultData);
                 return;
             }
 
@@ -705,27 +871,94 @@
             let suit = cardStr.slice(-1);
             let rank = cardStr.slice(0, -1);
             let isRed = (suit === '♥' || suit === '♦');
+            let isMatchingCard = (index === sequence.length - 1);
+
+            // Play card flip sound
+            andarSound.playCardFlip();
+
+            let targetContainer = (item.side === 'andar') ? andarBox : baharBox;
 
             let cardHtml = `
-                <div class="playing-card card-slide-deal ${isRed ? 'red' : 'black'} shadow-sm">
-                    <div style="font-size:0.75rem;">${rank}</div>
-                    <div class="text-center" style="font-size:0.9rem;">${suit}</div>
+                <div class="mini-deal-card ${isRed ? 'red' : 'black'} ${isMatchingCard ? 'card-matching-win' : 'card-slide-deal'} shadow-sm">
+                    ${isMatchingCard ? '<span class="card-matched-badge">MATCH!</span>' : ''}
+                    <div>${rank}</div>
+                    <div class="text-center">${suit}</div>
                 </div>
             `;
 
+            targetContainer.insertAdjacentHTML('beforeend', cardHtml);
+
             if (item.side === 'andar') {
-                andarBox.insertAdjacentHTML('beforeend', cardHtml);
+                andarCount++;
+                if (countAndarBadge) countAndarBadge.innerText = andarCount + ' Cards';
             } else {
-                baharBox.insertAdjacentHTML('beforeend', cardHtml);
+                baharCount++;
+                if (countBaharBadge) countBaharBadge.innerText = baharCount + ' Cards';
             }
 
             index++;
-        }, 220);
+        }, dealIntervalMs);
+    }
+
+    function checkAndShowUserResultModal(resultData) {
+        if (!resultData || lastShownModalPeriod === resultData.period_number) return;
+
+        let myOrders = window.lastMyOrdersArray || [];
+        let bet = myOrders.find(b => b.period_number === resultData.period_number);
+        if (!bet) return; // User didn't bet on this period
+
+        lastShownModalPeriod = resultData.period_number;
+
+        let winner = (resultData.winner || '').toLowerCase();
+        let isWon = (bet.status === 'won' || (parseFloat(bet.win_amount || 0) > 0));
+
+        let modalTitle = document.getElementById('resultModalTitle');
+        let modalHeader = document.getElementById('resultModalHeader');
+        let modalIcon = document.getElementById('resultModalIcon');
+        let modalWinningCard = document.getElementById('resultModalWinningCard');
+        let modalWinnerSide = document.getElementById('resultModalWinnerSide');
+        let modalAmount = document.getElementById('resultModalAmount');
+
+        if (!modalTitle || !modalHeader) return;
+
+        modalWinningCard.innerText = resultData.winning_card || '';
+        modalWinnerSide.innerText = winner.toUpperCase();
+        modalWinnerSide.className = (winner === 'andar') ? 'text-info' : ((winner === 'bahar') ? 'text-danger' : 'text-warning');
+
+        if (isWon) {
+            modalTitle.innerText = 'CONGRATULATIONS!';
+            modalHeader.style.background = 'linear-gradient(135deg, #16A34A, #15803D)';
+            modalIcon.innerHTML = '<i class="bi bi-trophy-fill text-warning"></i>';
+            modalAmount.className = 'fw-bold text-success mb-0 font-monospace';
+            modalAmount.innerText = '+₹' + parseFloat(bet.win_amount).toFixed(2);
+            andarSound.playWinSound();
+        } else {
+            modalTitle.innerText = 'BET LOST';
+            modalHeader.style.background = 'linear-gradient(135deg, #DC2626, #991B1B)';
+            modalIcon.innerHTML = '<i class="bi bi-x-circle-fill text-white"></i>';
+            modalAmount.className = 'fw-bold text-danger mb-0 font-monospace';
+            modalAmount.innerText = '-₹' + parseFloat(bet.bet_amount).toFixed(2);
+            andarSound.playLossSound();
+        }
+
+        let modal = new bootstrap.Modal(document.getElementById('roundResultModal'));
+        modal.show();
     }
 
     function resetDealingStage() {
         document.getElementById('cardsAndar').innerHTML = '<small class="text-secondary opacity-75 my-3">Waiting for deal...</small>';
         document.getElementById('cardsBahar').innerHTML = '<small class="text-secondary opacity-75 my-3">Waiting for deal...</small>';
+        let countAndarBadge = document.getElementById('countAndarBadge');
+        let countBaharBadge = document.getElementById('countBaharBadge');
+        let dealStatusText = document.getElementById('dealStatusText');
+
+        if (countAndarBadge) countAndarBadge.innerText = '0 Cards';
+        if (countBaharBadge) countBaharBadge.innerText = '0 Cards';
+        if (dealStatusText) {
+            dealStatusText.className = 'badge bg-secondary bg-opacity-50 text-secondary border border-secondary';
+            dealStatusText.innerText = 'WAITING FOR BETS';
+        }
+
         document.getElementById('sideBoxAndar').classList.remove('winner-glow');
         document.getElementById('sideBoxBahar').classList.remove('winner-glow');
     }
@@ -754,6 +987,7 @@
 
     function renderMyOrders(myOrders) {
         if (!myOrders) return;
+        window.lastMyOrdersArray = myOrders;
         let cacheKey = JSON.stringify(myOrders.map(o => o.id + o.status + o.win_amount));
         if (cacheKey === lastMyOrdersCache) return;
         lastMyOrdersCache = cacheKey;
@@ -794,12 +1028,13 @@
         }
         let html = '';
         orders.forEach(o => {
+            let optClass = (o.selection === 'ANDAR') ? 'bg-primary' : ((o.selection === 'BAHAR') ? 'bg-danger' : 'bg-warning text-dark');
             html += `
                 <tr>
-                    <td class="fw-bold">${o.user}</td>
-                    <td><span class="badge bg-secondary">${o.selection}</span></td>
-                    <td class="fw-bold">₹${o.amount}</td>
-                    <td><small class="text-info">${o.status}</small></td>
+                    <td class="fw-bold font-monospace text-info">${o.user}</td>
+                    <td><span class="badge ${optClass}">${o.selection}</span></td>
+                    <td class="fw-bold text-warning">₹${o.amount}</td>
+                    <td><small class="badge bg-success bg-opacity-20 text-success border border-success">${o.status}</small></td>
                 </tr>
             `;
         });

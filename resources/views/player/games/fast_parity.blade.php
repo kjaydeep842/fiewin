@@ -674,38 +674,7 @@
         }
     }
 
-    function showWinPopup(bet) {
-        document.getElementById('winModalPeriod').innerText = bet.period_number;
-        document.getElementById('winModalNumber').innerText = bet.winning_number;
-        document.getElementById('winModalAmount').innerText = '+₹' + bet.win_amount;
 
-        const colorsDiv = document.getElementById('winModalColors');
-        colorsDiv.innerHTML = '';
-        if (bet.winning_colors) {
-            bet.winning_colors.forEach(c => {
-                colorsDiv.innerHTML += `<span class="badge rounded-pill me-1 text-uppercase ${c === 'green' ? 'bg-success' : (c === 'red' ? 'bg-danger' : 'bg-purple')}" style="${c === 'violet' ? 'background:#8B5CF6;' : ''}">${c}</span>`;
-            });
-        }
-
-        winResultModal.show();
-    }
-
-    function showLossPopup(bet) {
-        document.getElementById('lossModalPeriod').innerText = bet.period_number;
-        document.getElementById('lossModalNumber').innerText = bet.winning_number;
-        document.getElementById('lossModalBetType').innerText = bet.bet_type;
-        document.getElementById('lossModalBetAmount').innerText = '₹' + bet.bet_amount;
-
-        const colorsDiv = document.getElementById('lossModalColors');
-        colorsDiv.innerHTML = '';
-        if (bet.winning_colors) {
-            bet.winning_colors.forEach(c => {
-                colorsDiv.innerHTML += `<span class="badge rounded-pill me-1 text-uppercase ${c === 'green' ? 'bg-success' : (c === 'red' ? 'bg-danger' : 'bg-purple')}" style="${c === 'violet' ? 'background:#8B5CF6;' : ''}">${c}</span>`;
-            });
-        }
-
-        lossResultModal.show();
-    }
 
     function renderPeriodHistory(historyList) {
         const tbody = document.getElementById('periodHistoryTbody');

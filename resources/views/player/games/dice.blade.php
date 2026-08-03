@@ -848,14 +848,13 @@ class DiceGameEngine {
             this.statusLabel.className = 'fw-bold text-warning';
             this.resultBadge.innerText = '?';
 
-            // Flash random faces with rolling audio
+            // Flash random faces with rolling audio during tumble
             let flashCount = 0;
             const flashInterval = setInterval(() => {
                 let rnd = Math.ceil(Math.random() * 6);
                 this.renderFace(rnd);
                 this.soundEngine.play('diceRoll');
                 flashCount++;
-                if (flashCount >= 18) clearInterval(flashInterval);
             }, 75);
 
             // 3. Settle Round with Backend Server
@@ -869,11 +868,11 @@ class DiceGameEngine {
             });
             const settleData = await settleRes.json();
 
-            // Wait until full 1.4s animation sequence finishes
-            await new Promise(r => setTimeout(r, 1400));
+            // Allow minimum tumble time (1.0s) for smooth visual experience
+            await new Promise(r => setTimeout(r, 1000));
+            
+            // Stop random face flashing BEFORE landing sequence
             clearInterval(flashInterval);
-            this.cubeWrapper.classList.remove('dice-anim-rolling');
-            this.cubeWrapper.classList.add('dice-anim-landing');
 
             if (!settleData.success) {
                 alert(settleData.message || 'Error settling roll.');
@@ -884,13 +883,16 @@ class DiceGameEngine {
             // 4. Reveal Exact Server Rolled Face & Landing Impact Sound
             const rolledNum = settleData.rolled;
             this.renderFace(rolledNum);
+            this.resultBadge.innerText = rolledNum;
+
+            this.cubeWrapper.classList.remove('dice-anim-rolling');
+            this.cubeWrapper.classList.add('dice-anim-landing');
             this.soundEngine.play('diceLanding');
 
             const isWon = (settleData.status === 'won');
             this.faceDisplay.classList.add(isWon ? 'dice-glow-win' : 'dice-glow-loss');
             this.statusLabel.innerText = isWon ? '🎉 WINNER!' : '❌ NO MATCH';
             this.statusLabel.className = 'fw-bold ' + (isWon ? 'text-success' : 'text-danger');
-            this.resultBadge.innerText = rolledNum;
 
             this.animateWalletCountUp(settleData.new_balance);
             this.updateStats(isWon, betAmount, parseFloat(String(settleData.win_amount).replace(/,/g, '')));
@@ -916,7 +918,7 @@ class DiceGameEngine {
                     this.soundEngine.play('lose');
                     if (window.animationManager) window.animationManager.shakeScreen();
                 }
-            }, 400);
+            }, 500);
 
         } catch (err) {
             console.error('Dice Roll Error:', err);

@@ -77,42 +77,47 @@ class CrashGameService
             ];
         }
 
-        // Dedicated Crash Rocket Bots
-        $rocketBots = [
-            ['name' => 'Rahul_VIP', 'bet' => 500, 'cashout_target' => 1.45],
-            ['name' => 'CryptoKing', 'bet' => 1000, 'cashout_target' => 2.10],
-            ['name' => 'Alex_Pro', 'bet' => 200, 'cashout_target' => 1.80],
-            ['name' => 'Winner99', 'bet' => 100, 'cashout_target' => 3.20],
-            ['name' => 'FastRunner', 'bet' => 50, 'cashout_target' => 1.25],
+        // Dynamic Crash Rocket Bot Pool seeded by round ID
+        $botPoolSeed = (int)$round->id;
+        $botNames = [
+            'Rahul_VIP', 'CryptoKing', 'Alex_Pro', 'Winner99', 'FastRunner', 
+            'SkyWalker', 'RocketMan', 'StarGazer', 'VipPlayer', 'JetMaster', 
+            'Titan99', 'ApexTrader', 'Rohan_99', 'Priya_Win', 'Karan_Pro', 
+            'Aarav_7', 'Suresh_M', 'Vikram_Ace', 'Deepak_77', 'Neha_Rich'
         ];
+        $betAmounts = [100, 200, 300, 500, 800, 1000, 1500, 2000, 2500, 5000];
 
-        foreach ($rocketBots as $index => $bot) {
+        for ($i = 0; $i < 12; $i++) {
+            $name = $botNames[($botPoolSeed + $i * 3) % count($botNames)];
+            $bet = $betAmounts[($botPoolSeed + $i * 7) % count($betAmounts)];
+            $target = round(1.10 + ((($botPoolSeed + $i * 13) % 40) * 0.15), 2); // Target multipliers from 1.10x to 7.00x
+
             $botStatus = 'flying';
             $cashoutMult = null;
             $profit = 0.00;
 
             if ($status === 'FLYING') {
-                if ($currentMultiplier >= $bot['cashout_target']) {
+                if ($currentMultiplier >= $target) {
                     $botStatus = 'cashed_out';
-                    $cashoutMult = number_format($bot['cashout_target'], 2);
-                    $profit = number_format($bot['bet'] * ($bot['cashout_target'] - 1), 2);
+                    $cashoutMult = number_format($target, 2);
+                    $profit = number_format($bet * ($target - 1), 2);
                 }
             } elseif ($status === 'CRASHED') {
                 $finalCrash = (float)$round->crash_multiplier;
-                if ($finalCrash >= $bot['cashout_target']) {
+                if ($finalCrash >= $target) {
                     $botStatus = 'cashed_out';
-                    $cashoutMult = number_format($bot['cashout_target'], 2);
-                    $profit = number_format($bot['bet'] * ($bot['cashout_target'] - 1), 2);
+                    $cashoutMult = number_format($target, 2);
+                    $profit = number_format($bet * ($target - 1), 2);
                 } else {
                     $botStatus = 'lost';
                 }
             }
 
             $liveBetsList[] = [
-                'id' => 'BOT_ROCKET_' . ($index + 1),
-                'username' => $bot['name'],
-                'bet_amount' => number_format($bot['bet'], 2),
-                'auto_cashout' => number_format($bot['cashout_target'], 2),
+                'id' => 'BOT_ROCKET_' . ($i + 1),
+                'username' => $name,
+                'bet_amount' => number_format($bet, 2),
+                'auto_cashout' => number_format($target, 2),
                 'cashout_multiplier' => $cashoutMult,
                 'profit' => $profit,
                 'status' => $botStatus,

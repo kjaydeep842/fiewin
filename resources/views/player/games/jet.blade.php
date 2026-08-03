@@ -31,8 +31,8 @@
     <div class="card border-0 shadow-lg rounded-4 overflow-hidden mb-3 bg-dark position-relative">
         <!-- Top Period Badge Overlay -->
         <div class="position-absolute top-0 end-0 p-2 z-3" style="pointer-events: none;">
-            <span class="badge bg-dark text-warning border border-warning px-3 py-2 rounded-pill shadow-lg font-monospace fw-bold fs-6">
-                Period: #<span id="jetCurrentRoundId">-</span>
+            <span class="badge bg-dark bg-opacity-75 text-warning border border-warning px-2 py-1 rounded-pill shadow-sm font-monospace fw-bold" style="font-size: 0.72rem;">
+                Period #<span id="jetCurrentRoundId">-</span>
             </span>
         </div>
         <canvas id="jetCanvas" style="width: 100%; height: 320px; display: block;"></canvas>
@@ -47,9 +47,9 @@
     <!-- Active Bet Live Card (Visible when user has a running bet) -->
     <div id="jetActiveBetCard" class="card border-0 shadow-sm rounded-4 mb-3 bg-success-subtle border-start border-4 border-success d-none">
         <div class="card-body p-3">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="badge bg-success px-2 py-1"><i class="bi bi-broadcast me-1"></i>ACTIVE JET BET</span>
-                <span class="text-muted small fw-bold">Period #<span id="jetActiveRoundId">-</span></span>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-1 mb-2">
+                <span class="badge bg-success px-2 py-1 flex-shrink-0" style="font-size: 0.72rem;"><i class="bi bi-broadcast me-1"></i>ACTIVE JET BET</span>
+                <span class="text-muted small fw-bold font-monospace" style="font-size: 0.72rem;">Period #<span id="jetActiveRoundId">-</span></span>
             </div>
             <div class="row text-center g-2 my-1">
                 <div class="col-4">
@@ -72,17 +72,13 @@
     <div class="card border-0 shadow-sm rounded-4 mb-3">
         <div class="card-body p-3">
             <!-- Stake Row -->
-            <div class="row g-2 mb-3">
-                <div class="col-8">
-                    <label class="form-label text-muted small fw-bold mb-1">BET AMOUNT (₹)</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-light border-0 fw-bold">₹</span>
-                        <input type="number" id="jetBetAmount" class="form-control form-control-lg bg-light border-0 fw-bold" value="100" min="10" max="50000">
-                    </div>
-                </div>
-                <div class="col-4 d-flex align-items-end gap-1">
-                    <button id="btnHalfBetJet" class="btn btn-outline-secondary w-50 fw-bold">1/2</button>
-                    <button id="btnDoubleBetJet" class="btn btn-outline-secondary w-50 fw-bold">2X</button>
+            <div class="mb-3">
+                <label class="form-label text-muted small fw-bold mb-1">BET AMOUNT (₹)</label>
+                <div class="input-group input-group-lg border rounded-3 overflow-hidden shadow-sm">
+                    <span class="input-group-text bg-light border-0 fw-bold text-muted px-3">₹</span>
+                    <input type="number" id="jetBetAmount" class="form-control bg-light border-0 fw-bold text-dark fs-5" value="100" min="10" max="50000">
+                    <button id="btnHalfBetJet" class="btn btn-light fw-bold border-0 border-start text-dark px-3 text-nowrap" type="button" style="font-size: 0.9rem;">1/2</button>
+                    <button id="btnDoubleBetJet" class="btn btn-light fw-bold border-0 border-start text-dark px-3 text-nowrap" type="button" style="font-size: 0.9rem;">2X</button>
                 </div>
             </div>
 

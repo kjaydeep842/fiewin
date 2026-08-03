@@ -147,34 +147,48 @@ class GameController extends Controller
             ->orderBy('id', 'desc')
             ->first();
 
-        // Get user's latest settled bet
-        $userLatestSettledBet = GameBet::where('user_id', $user->id)
+        // Get user's latest settled period number
+        $userLatestPeriodNumber = GameBet::where('user_id', $user->id)
             ->where('game_id', $game->id)
             ->whereIn('status', ['won', 'lost'])
             ->orderBy('id', 'desc')
-            ->first();
+            ->value('period_number');
 
         $latestBetData = null;
-        if ($userLatestSettledBet) {
-            $betResult = GameResult::where('game_id', $game->id)
-                ->where('period_number', $userLatestSettledBet->period_number)
-                ->first();
+        if ($userLatestPeriodNumber) {
+            $periodBets = GameBet::where('user_id', $user->id)
+                ->where('game_id', $game->id)
+                ->where('period_number', $userLatestPeriodNumber)
+                ->whereIn('status', ['won', 'lost'])
+                ->get();
 
-            $latestBetData = [
-                'id'             => $userLatestSettledBet->id,
-                'period_number'  => $userLatestSettledBet->period_number,
-                'bet_type'       => strtoupper($userLatestSettledBet->bet_type),
-                'bet_amount'     => number_format($userLatestSettledBet->bet_amount, 2),
-                'win_amount'     => number_format($userLatestSettledBet->win_amount, 2),
-                'status'         => $userLatestSettledBet->status,
-                'winning_number' => $betResult ? ($betResult->result_data['number'] ?? 0) : 0,
-                'winning_colors' => $betResult ? ($betResult->result_data['colors'] ?? []) : [],
-                // Unix timestamp of when the bet was settled — used by frontend to
-                // gate popups: only show if settled AFTER the current page load.
-                'settled_at_unix' => $userLatestSettledBet->updated_at
-                    ? $userLatestSettledBet->updated_at->timestamp
-                    : 0,
-            ];
+            if ($periodBets->isNotEmpty()) {
+                // If user placed multiple bets in this period and at least 1 is a WIN, show WIN popup
+                $winningBets = $periodBets->where('status', 'won');
+                $hasWin = $winningBets->isNotEmpty();
+
+                $primaryBet = $hasWin ? $winningBets->first() : $periodBets->first();
+                $totalWinAmount = $periodBets->sum('win_amount');
+                $totalBetAmount = $periodBets->sum('bet_amount');
+
+                $betResult = GameResult::where('game_id', $game->id)
+                    ->where('period_number', $userLatestPeriodNumber)
+                    ->first();
+
+                $latestBetData = [
+                    'id'             => 'PER_' . $userLatestPeriodNumber,
+                    'period_number'  => $userLatestPeriodNumber,
+                    'bet_type'       => $hasWin
+                        ? strtoupper($winningBets->pluck('bet_type')->implode(', '))
+                        : strtoupper($periodBets->pluck('bet_type')->implode(', ')),
+                    'bet_amount'     => number_format($totalBetAmount, 2),
+                    'win_amount'     => number_format($totalWinAmount, 2),
+                    'status'         => $hasWin ? 'won' : 'lost',
+                    'winning_number' => $betResult ? ($betResult->result_data['number'] ?? 0) : 0,
+                    'winning_colors' => $betResult ? ($betResult->result_data['colors'] ?? []) : [],
+                    'settled_at_unix' => $primaryBet->updated_at ? $primaryBet->updated_at->timestamp : 0,
+                ];
+            }
         }
 
         // Latest period history (settled)

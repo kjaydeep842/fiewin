@@ -53,17 +53,22 @@ class AndarBaharGameService
     public function getCurrentRound(): AndarBaharRound
     {
         $settings = AndarBaharSetting::getSettings();
-        $roundSeconds = $settings->round_seconds > 0 ? $settings->round_seconds : 60;
+        $totalRoundSeconds = 75; // 60s countdown + 15s dealing phase at 00:00
 
-        $active = AndarBaharRound::where('status', 'betting')
+        $active = AndarBaharRound::whereIn('status', ['betting', 'dealing'])
             ->orderBy('id', 'desc')
             ->first();
 
         if ($active) {
             $startedAt = $active->started_at ? $active->started_at->timestamp : time();
             $elapsed = max(0, time() - $startedAt);
-            if ($elapsed < $roundSeconds) {
+            if ($elapsed < $totalRoundSeconds) {
                 return $active;
+            } else {
+                // Round duration (75s) complete, mark as settled
+                if ($active->status !== 'settled') {
+                    $active->update(['status' => 'settled']);
+                }
             }
         }
 
@@ -113,14 +118,22 @@ class AndarBaharGameService
      */
     public function settleRound(AndarBaharRound $round): AndarBaharResult
     {
-        return DB::transaction(function () use ($round) {
-            // Check if already settled
-            $existingResult = AndarBaharResult::where('period_number', $round->period_number)->first();
-            if ($existingResult) {
-                return $existingResult;
-            }
+        $settings = AndarBaharSetting::getSettings();
+        $totalRoundSeconds = 75;
+        $startedAt = $round->started_at ? $round->started_at->timestamp : time();
+        $elapsed = max(0, time() - $startedAt);
+        $newStatus = ($elapsed >= $totalRoundSeconds) ? 'settled' : 'dealing';
 
-            $settings = AndarBaharSetting::getSettings();
+        // Check if already settled/calculated
+        $existingResult = AndarBaharResult::where('period_number', $round->period_number)->first();
+        if ($existingResult) {
+            if ($round->status !== $newStatus) {
+                $round->update(['status' => $newStatus]);
+            }
+            return $existingResult;
+        }
+
+        return DB::transaction(function () use ($round, $settings, $newStatus) {
             $pendingBets = AndarBaharBet::where('period_number', $round->period_number)
                 ->where('status', 'pending')
                 ->get();
@@ -149,13 +162,13 @@ class AndarBaharGameService
             // Generate deal sequence matching winner
             $dealData = $this->generateDealSequence($round->open_card, $winner);
 
-            // Update round
+            // Update round status
             $round->update([
                 'winner' => $winner,
                 'deal_sequence' => $dealData['sequence'],
                 'matching_card' => $dealData['matching_card'],
                 'deal_count' => count($dealData['sequence']),
-                'status' => 'settled',
+                'status' => $newStatus,
                 'manual_override' => $isOverride,
                 'settled_at' => now(),
             ]);
