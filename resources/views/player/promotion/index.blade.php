@@ -236,7 +236,7 @@
             <input type="text"
                    name="code"
                    class="coupon-input form-control"
-                   placeholder="ENTER CODE (e.g. GAMEHUB50)"
+                   placeholder="ENTER CODE (e.g. RIVEXA50)"
                    required>
             <button type="submit" class="coupon-btn">REDEEM</button>
         </div>

@@ -2,7 +2,7 @@
 
 @section('content')
 <style>
-    /* ── GameHub Premium Casino Theme & Glassmorphism ── */
+    /* ── Rivexa Premium Casino Theme & Glassmorphism ── */
     :root {
         --dice-bg-dark: #0B132B;
         --dice-card-bg: rgba(15, 23, 42, 0.85);

@@ -32,7 +32,7 @@ class PaymentMethodSeeder extends Seeder
                 'name' => 'UPI Fast QR Deposit',
                 'code' => 'upi_qr',
                 'qr_image' => '/images/qr/upi_sample_qr.png',
-                'upi_id' => 'gamehub.pay@upi',
+                'upi_id' => 'rivexa.pay@upi',
                 'min_amount' => 100.00,
                 'max_amount' => 50000.00,
                 'bonus_percentage' => 10.00,

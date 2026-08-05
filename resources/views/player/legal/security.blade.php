@@ -38,7 +38,7 @@
                     <h6 class="fw-bold text-dark mb-0">256-Bit SSL Data Encryption</h6>
                 </div>
                 <p class="text-secondary small leading-relaxed mb-0">
-                    All communication between your device and GameHub servers is encrypted using 256-bit Secure Sockets Layer (SSL) technology, ensuring that your personal information, passwords, and transaction details remain private and unreadable to third parties.
+                    All communication between your device and Rivexa servers is encrypted using 256-bit Secure Sockets Layer (SSL) technology, ensuring that your personal information, passwords, and transaction details remain private and unreadable to third parties.
                 </p>
             </div>
         </div>
@@ -90,7 +90,7 @@
             </div>
             <div class="list-group-item p-3 small text-dark d-flex align-items-center gap-2">
                 <i class="bi bi-check-circle-fill text-success"></i>
-                Never share your GameHub account password, OTP, or PIN with anyone, including support staff.
+                Never share your Rivexa account password, OTP, or PIN with anyone, including support staff.
             </div>
             <div class="list-group-item p-3 small text-dark d-flex align-items-center gap-2">
                 <i class="bi bi-check-circle-fill text-success"></i>

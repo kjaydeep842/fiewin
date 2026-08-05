@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GameHub Control Center - Admin Panel</title>
+    <title>Rivexa Control Center - Admin Panel</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -284,7 +284,7 @@
         <div class="admin-sidebar-brand">
             <div class="brand-icon"><i class="bi bi-controller"></i></div>
             <div class="brand-text">
-                <h6>GameHub</h6>
+                <h6>Rivexa</h6>
                 <small>Control Center</small>
             </div>
         </div>

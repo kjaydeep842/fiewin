@@ -37,7 +37,7 @@ class PromotionSeeder extends Seeder
         );
 
         Coupon::firstOrCreate(
-            ['code' => 'GAMEHUB50'],
+            ['code' => 'RIVEXA50'],
             [
                 'amount' => 50.00,
                 'min_deposit' => 0.00,

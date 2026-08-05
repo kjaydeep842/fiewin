@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>GameHub - Next-Gen Gaming Platform</title>
+    <title>Rivexa - Next-Gen Gaming Platform</title>
     
     <!-- Bootstrap 5 & Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -472,7 +472,7 @@
             <i class="bi bi-megaphone-fill text-warning me-2 fs-6 flex-shrink-0"></i>
             <div class="gh-marquee-wrap">
                 <marquee behavior="scroll" direction="left" scrollamount="4">
-                    🎉 Welcome to GameHub! Instant 5% bonus on UPI deposits. Player***41 won ₹3,450 on Mines! Rocket hit 52.4x on Crash!
+                    🎉 Welcome to Rivexa! Instant 5% bonus on UPI deposits. Player***41 won ₹3,450 on Mines! Rocket hit 52.4x on Crash!
                 </marquee>
             </div>
         </div>

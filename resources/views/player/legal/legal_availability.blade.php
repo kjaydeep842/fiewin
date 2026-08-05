@@ -19,7 +19,7 @@
     <div class="gh-card p-4 mb-3 border-start border-4 border-warning">
         <h5 class="fw-bold text-dark mb-2"><i class="bi bi-journal-check text-warning me-2"></i>Legal Framework: Game of Skill</h5>
         <p class="text-secondary small leading-relaxed mb-0">
-            Real-money games hosted on GameHub are classified as <strong>Games of Skill</strong>. Under Indian jurisprudence—supported by landmark judgments of the Supreme Court of India—games where success depends predominantly upon superior knowledge, training, attention, experience, and adroitness of the player are constitutionally protected under Article 19(1)(g) of the Constitution of India.
+            Real-money games hosted on Rivexa are classified as <strong>Games of Skill</strong>. Under Indian jurisprudence—supported by landmark judgments of the Supreme Court of India—games where success depends predominantly upon superior knowledge, training, attention, experience, and adroitness of the player are constitutionally protected under Article 19(1)(g) of the Constitution of India.
         </p>
     </div>
 
@@ -80,7 +80,7 @@
             <div class="gh-card p-4 h-100">
                 <h6 class="fw-bold text-dark mb-2"><i class="bi bi-shield-lock-fill text-primary me-2"></i>Age Limit (18+ Only)</h6>
                 <p class="text-secondary small leading-relaxed mb-0">
-                    Real-money gaming is strictly barred for minors. You must be at least <strong>18 years old</strong> to access GameHub services. Age verification is conducted during identity submission (KYC). Minors attempting to access real-money features will have their accounts immediately blocked and funds refunded according to regulatory policies.
+                    Real-money gaming is strictly barred for minors. You must be at least <strong>18 years old</strong> to access Rivexa services. Age verification is conducted during identity submission (KYC). Minors attempting to access real-money features will have their accounts immediately blocked and funds refunded according to regulatory policies.
                 </p>
             </div>
         </div>
@@ -89,7 +89,7 @@
             <div class="gh-card p-4 h-100">
                 <h6 class="fw-bold text-dark mb-2"><i class="bi bi-receipt-cutoff text-primary me-2"></i>TDS Tax Compliance (Section 194BA)</h6>
                 <p class="text-secondary small leading-relaxed mb-0">
-                    GameHub strictly adheres to the provisions of Section 194BA of the Indian Income Tax Act. A flat <strong>30% TDS tax</strong> is deducted on net winnings at the time of withdrawal. TDS certificates (Form 16A) are issued quarterly to compliant players.
+                    Rivexa strictly adheres to the provisions of Section 194BA of the Indian Income Tax Act. A flat <strong>30% TDS tax</strong> is deducted on net winnings at the time of withdrawal. TDS certificates (Form 16A) are issued quarterly to compliant players.
                 </p>
             </div>
         </div>
@@ -99,7 +99,7 @@
     <div class="gh-card p-4">
         <h5 class="fw-bold text-dark mb-2"><i class="bi bi-globe text-primary me-2"></i>International Availability & Compliance</h5>
         <p class="text-secondary small leading-relaxed mb-0">
-            GameHub operates in full compliance with local regulatory guidelines. International players are responsible for ensuring that participating in online real-money gaming does not violate local laws or regulations within their resident jurisdiction.
+            Rivexa operates in full compliance with local regulatory guidelines. International players are responsible for ensuring that participating in online real-money gaming does not violate local laws or regulations within their resident jurisdiction.
         </p>
     </div>
 </div>

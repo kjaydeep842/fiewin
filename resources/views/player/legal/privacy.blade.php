@@ -42,7 +42,7 @@
         <div class="mb-4">
             <h5 class="fw-bold text-dark mb-2"><i class="bi bi-1-circle-fill text-primary me-2"></i>1. Overview & Commitment</h5>
             <p class="text-secondary small leading-relaxed">
-                At GameHub ("Fiewin"), we are deeply committed to protecting your personal information and respecting your privacy. This Privacy Policy outlines how we collect, store, process, and safeguard your data when you access our real-money gaming platform, website, or mobile services.
+                At Rivexa ("Fiewin"), we are deeply committed to protecting your personal information and respecting your privacy. This Privacy Policy outlines how we collect, store, process, and safeguard your data when you access our real-money gaming platform, website, or mobile services.
             </p>
         </div>
 

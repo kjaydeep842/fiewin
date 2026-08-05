@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login — GameHub</title>
+    <title>Login — Rivexa</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -250,7 +250,7 @@
                     <i class="bi bi-shield-lock-fill"></i>
                 </div>
                 <h4 class="fw-bold mb-1" style="color: #111827;">Welcome back!</h4>
-                <p class="text-muted small mb-0">Sign in to access your GameHub account</p>
+                <p class="text-muted small mb-0">Sign in to access your Rivexa account</p>
             </div>
 
             <!-- Error Alert -->
@@ -315,7 +315,7 @@
                 </div>
 
                 <button type="submit" class="btn-auth-primary">
-                    <i class="bi bi-box-arrow-in-right me-2"></i>LOGIN TO GAMEHUB
+                    <i class="bi bi-box-arrow-in-right me-2"></i>LOGIN TO RIVEXA
                 </button>
             </form>
 

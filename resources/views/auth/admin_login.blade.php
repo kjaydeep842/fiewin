@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login - GameHub Control Center</title>
+    <title>Admin Login - Rivexa Control Center</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -106,7 +106,7 @@
         <!-- Brand -->
         <div class="text-center mb-4">
             <div class="brand-logo"><i class="bi bi-controller"></i></div>
-            <h5 class="fw-bold mb-0" style="color: #111827;">GameHub Admin</h5>
+            <h5 class="fw-bold mb-0" style="color: #111827;">Rivexa Admin</h5>
             <p class="text-muted small mt-1">Control Center — Authorized Access Only</p>
         </div>
 
@@ -126,7 +126,7 @@
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-envelope"></i></span>
                     <input type="email" name="email" class="form-control @error('email') is-invalid @enderror"
-                           placeholder="admin@gamehub.com" value="{{ old('email') }}" required autofocus>
+                           placeholder="admin@rivexa.com" value="{{ old('email') }}" required autofocus>
                 </div>
                 @error('email')
                     <div class="text-danger small mt-1">{{ $message }}</div>

@@ -104,7 +104,7 @@
             <div class="gh-card p-4 h-100">
                 <h5 class="fw-bold text-dark mb-3"><i class="bi bi-building text-primary me-2"></i>Corporate Information</h5>
                 <p class="text-secondary small leading-relaxed mb-3">
-                    GameHub operates as a licensed skill gaming platform providing fair, audited, and secure online gaming options.
+                    Rivexa operates as a licensed skill gaming platform providing fair, audited, and secure online gaming options.
                 </p>
 
                 <div class="p-3 bg-light rounded-3 border mb-3">
@@ -112,7 +112,7 @@
                         <i class="bi bi-geo-alt-fill text-danger fs-5"></i>
                         <div>
                             <span class="d-block fw-bold text-dark small">Registered Entity</span>
-                            <span class="text-secondary small">GameHub Interactive Media Technologies Ltd.<br>Tower B, Cyber City, Phase III, Gurugram, HR - 122002</span>
+                            <span class="text-secondary small">Rivexa Interactive Media Technologies Ltd.<br>Tower B, Cyber City, Phase III, Gurugram, HR - 122002</span>
                         </div>
                     </div>
                 </div>

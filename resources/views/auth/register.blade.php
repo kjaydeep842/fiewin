@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register — GameHub</title>
+    <title>Register — Rivexa</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -262,7 +262,7 @@
                     <i class="bi bi-person-plus-fill"></i>
                 </div>
                 <h4 class="fw-bold mb-1" style="color: #111827;">Create Your Account</h4>
-                <p class="text-muted small mb-0">Join GameHub and start winning today</p>
+                <p class="text-muted small mb-0">Join Rivexa and start winning today</p>
             </div>
 
             <!-- Bonus Banner -->

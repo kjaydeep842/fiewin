@@ -56,7 +56,7 @@ class LegalPageController extends Controller
         try {
             Mail::html("
                 <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 10px;'>
-                    <h3 style='color: #1E88E5;'>New GameHub Support Inquiry</h3>
+                    <h3 style='color: #1E88E5;'>New Rivexa Support Inquiry</h3>
                     <p><strong>From:</strong> {$validated['name']} ({$validated['email']})</p>
                     <p><strong>Mobile:</strong> " . ($validated['mobile'] ?? 'N/A') . "</p>
                     <p><strong>Subject:</strong> {$validated['subject']}</p>
@@ -67,7 +67,7 @@ class LegalPageController extends Controller
             ", function ($message) use ($validated) {
                 $message->to('rivexagames@gmail.com')
                         ->replyTo($validated['email'], $validated['name'])
-                        ->subject('GameHub Support Ticket: ' . $validated['subject']);
+                        ->subject('Rivexa Support Ticket: ' . $validated['subject']);
             });
         } catch (\Throwable $e) {
             logger()->error("Contact Mail Error: " . $e->getMessage());

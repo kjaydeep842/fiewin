@@ -63,7 +63,7 @@
 
         <!-- Copyright & Platform Info -->
         <div class="text-secondary" style="font-size: 0.72rem;">
-            <p class="mb-1">© {{ date('Y') }} <strong>GameHub (Fiewin)</strong>. All Rights Reserved.</p>
+            <p class="mb-1">© {{ date('Y') }} <strong>Rivexa (Fiewin)</strong>. All Rights Reserved.</p>
             <p class="mb-0 text-muted">Licensed Skill-Based Gaming Platform. TDS deducted under Sec 194BA.</p>
         </div>
     </div>

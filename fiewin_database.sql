@@ -19,7 +19,7 @@ CREATE TABLE `admins` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `admins` VALUES
-('1', 'Super Admin', 'admin@gamehub.com', '$2y$12$Tx/SS93O9py0ovjnJX9xlOnxVZdKlp0wzmf96j8bilSHwrr6b6Vfu', 'admin', 'active', NULL, '2026-07-30 09:42:45', '2026-07-30 09:42:45');
+('1', 'Super Admin', 'admin@rivexa.com', '$2y$12$Tx/SS93O9py0ovjnJX9xlOnxVZdKlp0wzmf96j8bilSHwrr6b6Vfu', 'admin', 'active', NULL, '2026-07-30 09:42:45', '2026-07-30 09:42:45');
 
 DROP TABLE IF EXISTS `andar_bahar_bets`;
 CREATE TABLE `andar_bahar_bets` (
@@ -880,7 +880,7 @@ CREATE TABLE `coupons` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `coupons` VALUES
-('1', 'GAMEHUB50', '50.00', '0.00', '500', '12', NULL, '1', '2026-07-30 09:42:45', '2026-07-30 09:42:45');
+('1', 'RIVEXA50', '50.00', '0.00', '500', '12', NULL, '1', '2026-07-30 09:42:45', '2026-07-30 09:42:45');
 
 DROP TABLE IF EXISTS `crash_bets`;
 CREATE TABLE `crash_bets` (
@@ -3399,7 +3399,7 @@ CREATE TABLE `payment_methods` (
 INSERT INTO `payment_methods` VALUES
 ('1', 'Razorpay Gateway', 'razorpay', NULL, NULL, '100.00', '100000.00', '5.00', 'Instant auto credit via Netbanking / UPI / Cards.', '0', '2026-07-30 09:42:45', '2026-08-02 09:40:26'),
 ('2', 'PhonePe Direct Gateway', 'phonepe', NULL, NULL, '100.00', '50000.00', '5.00', 'Pay via PhonePe app / UPI intent.', '0', '2026-07-30 09:42:45', '2026-08-02 09:40:26'),
-('3', 'UPI Fast QR Deposit', 'upi_qr', '/images/qr/upi_sample_qr.png', 'gamehub.pay@upi', '100.00', '50000.00', '10.00', 'Scan QR code, enter UTR / Ref Number after payment.', '1', '2026-07-30 09:42:45', '2026-07-30 09:42:45'),
+('3', 'UPI Fast QR Deposit', 'upi_qr', '/images/qr/upi_sample_qr.png', 'rivexa.pay@upi', '100.00', '50000.00', '10.00', 'Scan QR code, enter UTR / Ref Number after payment.', '1', '2026-07-30 09:42:45', '2026-07-30 09:42:45'),
 ('4', 'Manual Bank Deposit', 'manual_bank', NULL, NULL, '500.00', '200000.00', '8.00', 'Transfer to HDFC Bank A/C: 50200012345678, IFSC: HDFC0001234.', '1', '2026-07-30 09:42:45', '2026-07-30 09:42:45');
 
 DROP TABLE IF EXISTS `permissions`;

@@ -47,7 +47,7 @@ class GameHelper
     /**
      * Generate provably fair crash multiplier
      */
-    public static function generateCrashPoint(string $seed, string $salt = 'gamehub_crash_salt'): float
+    public static function generateCrashPoint(string $seed, string $salt = 'rivexa_crash_salt'): float
     {
         $hash = hash_hmac('sha256', $seed, $salt);
         $subHash = substr($hash, 0, 8);

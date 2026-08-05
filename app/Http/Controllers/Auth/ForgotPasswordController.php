@@ -49,23 +49,23 @@ class ForgotPasswordController extends Controller
             Mail::html("
                 <div style='font-family: Arial, sans-serif; max-width: 550px; margin: 0 auto; padding: 25px; border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff;'>
                     <div style='text-align: center; margin-bottom: 20px;'>
-                        <h2 style='color: #1E88E5; margin: 0;'>GameHub</h2>
+                        <h2 style='color: #1E88E5; margin: 0;'>Rivexa</h2>
                         <p style='color: #6b7280; font-size: 14px;'>Password Reset Request</p>
                     </div>
                     <p style='color: #374151; font-size: 15px;'>Hello,</p>
                     <p style='color: #374151; font-size: 14px; line-height: 1.5;'>
-                        We received a request to reset your password for your GameHub account (<strong>{$request->email}</strong>). Click the button below to reset your password:
+                        We received a request to reset your password for your Rivexa account (<strong>{$request->email}</strong>). Click the button below to reset your password:
                     </p>
                     <div style='text-align: center; margin: 30px 0;'>
                         <a href='{$resetUrl}' style='background: linear-gradient(135deg, #1E88E5, #42A5F5); color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 15px; display: inline-block;'>RESET YOUR PASSWORD</a>
                     </div>
                     <p style='color: #6b7280; font-size: 13px;'>If you did not request a password reset, please ignore this email.</p>
                     <hr style='border: none; border-top: 1px solid #e5e7eb; margin: 25px 0;' />
-                    <p style='color: #9ca3af; font-size: 12px; text-align: center;'>© GameHub Real-Money Gaming Platform. All rights reserved.</p>
+                    <p style='color: #9ca3af; font-size: 12px; text-align: center;'>© Rivexa Real-Money Gaming Platform. All rights reserved.</p>
                 </div>
             ", function ($message) use ($request) {
                 $message->to($request->email)
-                        ->subject('GameHub - Password Reset Request');
+                        ->subject('Rivexa - Password Reset Request');
             });
         } catch (\Throwable $e) {
             logger()->error("Mail send error: " . $e->getMessage());

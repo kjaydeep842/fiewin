@@ -19,7 +19,7 @@
     <div class="gh-card p-4 mb-3 border-start border-4 border-success">
         <h5 class="fw-bold text-dark mb-2"><i class="bi bi-shield-check text-success me-2"></i>Our Commitment to Responsible Gaming</h5>
         <p class="text-secondary small leading-relaxed mb-0">
-            At GameHub ("Fiewin"), we believe real-money gaming should always remain an enjoyable form of entertainment. We are dedicated to maintaining a safe, fair, and transparent environment by encouraging healthy gaming habits, providing self-control tools, and preventing underage gaming.
+            At Rivexa ("Fiewin"), we believe real-money gaming should always remain an enjoyable form of entertainment. We are dedicated to maintaining a safe, fair, and transparent environment by encouraging healthy gaming habits, providing self-control tools, and preventing underage gaming.
         </p>
     </div>
 
