@@ -3560,7 +3560,7 @@ CREATE TABLE `users` (
   `avatar` varchar(255) DEFAULT NULL,
   `role` enum('player','agent','subadmin','admin') NOT NULL DEFAULT 'player',
   `status` enum('active','blocked','suspended') NOT NULL DEFAULT 'active',
-  `kyc_status` enum('pending','approved','rejected','not_submitted') NOT NULL DEFAULT 'not_submitted',
+  `kyc_status` varchar(30) NOT NULL DEFAULT 'unverified',
   `google_id` varchar(255) DEFAULT NULL,
   `remember_token` varchar(100) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,

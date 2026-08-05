@@ -24,7 +24,7 @@ return new class extends Migration
             $table->string('avatar')->nullable();
             $table->enum('role', ['player', 'agent', 'subadmin', 'admin'])->default('player');
             $table->enum('status', ['active', 'blocked', 'suspended'])->default('active');
-            $table->enum('kyc_status', ['pending', 'approved', 'rejected', 'not_submitted'])->default('not_submitted');
+            $table->string('kyc_status', 30)->default('unverified');
             $table->string('google_id')->nullable();
             $table->rememberToken();
             $table->timestamps();

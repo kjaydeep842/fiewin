@@ -232,7 +232,7 @@
     <div class="auth-topbar">
         <a href="{{ route('home') }}" class="brand-link">
             <div class="brand-icon"><i class="bi bi-controller"></i></div>
-            <span>Game<span style="color: #1E88E5;">Hub</span></span>
+            <span>RIV<span style="color: #1E88E5;">EXA</span></span>
         </a>
         <div class="d-flex gap-2">
             <a href="{{ route('login') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold" style="font-size: 0.82rem;">Login</a>

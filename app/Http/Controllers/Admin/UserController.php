@@ -44,7 +44,7 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email,' . $user->id,
             'mobile' => 'required|string|unique:users,mobile,' . $user->id,
             'status' => 'required|in:active,blocked',
-            'kyc_status' => 'required|in:unverified,pending,verified,rejected',
+            'kyc_status' => 'required|in:unverified,pending,verified,approved,rejected,not_submitted',
             'main_balance' => 'nullable|numeric|min:0',
         ]);
 
