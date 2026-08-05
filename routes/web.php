@@ -1,14 +1,27 @@
 <?php
 
+use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Player\GameController;
 use App\Http\Controllers\Player\HomeController;
+use App\Http\Controllers\Player\LegalPageController;
+use App\Http\Controllers\Player\NotificationController;
 use App\Http\Controllers\Player\ProfileController;
 use App\Http\Controllers\Player\PromotionController;
 use App\Http\Controllers\Player\ReferralController;
 use App\Http\Controllers\Player\WalletController;
 use Illuminate\Support\Facades\Route;
+
+// Public Legal, Safety & Compliance Routes
+Route::get('/privacy', [LegalPageController::class, 'privacy'])->name('privacy');
+Route::get('/terms', [LegalPageController::class, 'terms'])->name('terms');
+Route::get('/responsible-gaming', [LegalPageController::class, 'responsibleGaming'])->name('responsible-gaming');
+Route::get('/contact', [LegalPageController::class, 'contact'])->name('contact');
+Route::post('/contact/submit', [LegalPageController::class, 'submitContact'])->name('contact.submit');
+Route::get('/legal-availability', [LegalPageController::class, 'legalAvailability'])->name('legal-availability');
+Route::get('/security', [LegalPageController::class, 'security'])->name('security');
 
 // Guest Auth Routes
 Route::middleware('guest')->group(function () {
@@ -16,6 +29,12 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [LoginController::class, 'login']);
     Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
     Route::post('/register', [RegisterController::class, 'register']);
+
+    // Password Reset Routes
+    Route::get('/forgot-password', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
+    Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
+    Route::get('/reset-password/{token}', [ResetPasswordController::class, 'showResetForm'])->name('password.reset');
+    Route::post('/reset-password', [ResetPasswordController::class, 'reset'])->name('password.update');
 });
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
@@ -74,6 +93,7 @@ Route::middleware('auth')->group(function () {
 
     // Wallet
     Route::get('/wallet', [WalletController::class, 'index'])->name('wallet.index');
+    Route::get('/wallet/history', [WalletController::class, 'history'])->name('wallet.history');
     Route::post('/wallet/deposit', [WalletController::class, 'deposit'])->name('wallet.deposit');
     Route::get('/wallet/deposit/checkout/{depositId}', [WalletController::class, 'checkout'])->name('wallet.deposit.checkout');
     Route::post('/wallet/deposit/proof/{depositId}', [WalletController::class, 'submitProof'])->name('wallet.deposit.proof');
@@ -94,6 +114,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/update-password', [ProfileController::class, 'updatePassword'])->name('profile.password');
     Route::post('/profile/submit-kyc', [ProfileController::class, 'submitKYC'])->name('profile.kyc');
     Route::post('/profile/add-bank', [ProfileController::class, 'addBankAccount'])->name('profile.bank');
+
+    // Notifications
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+    Route::get('/notifications/realtime-check', [NotificationController::class, 'realtimeCheck'])->name('notifications.realtime-check');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
 });
 
 // Admin Authentication (public - no admin middleware)

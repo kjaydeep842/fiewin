@@ -37,20 +37,30 @@
                         @endif
                     </td>
                     <td>
-                        <span class="badge {{ $w->status === 'approved' ? 'badge-soft-success' : 'badge-soft-warning' }} rounded-pill px-2">
+                        <span class="badge {{ $w->status === 'approved' ? 'badge-soft-success' : ($w->status === 'rejected' ? 'badge-soft-danger' : 'badge-soft-warning') }} rounded-pill px-2">
                             {{ strtoupper($w->status) }}
                         </span>
                     </td>
                     <td>
                         @if($w->status === 'pending')
-                            <form action="{{ route('admin.withdrawals.approve', $w->id) }}" method="POST">
-                                @csrf
-                                <button type="submit" class="btn btn-sm btn-admin-primary rounded-pill py-1 px-3" style="font-size: 0.78rem;">
-                                    <i class="bi bi-send me-1"></i>MARK DISBURSED
-                                </button>
-                            </form>
+                            <div class="d-flex gap-1">
+                                <form action="{{ route('admin.withdrawals.approve', $w->id) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-success rounded-pill py-1 px-2" style="font-size: 0.78rem;">
+                                        <i class="bi bi-check-circle me-1"></i>Approve
+                                    </button>
+                                </form>
+                                <form action="{{ route('admin.withdrawals.reject', $w->id) }}" method="POST" onsubmit="return confirm('Reject withdrawal and refund balance to user?');">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill py-1 px-2" style="font-size: 0.78rem;">
+                                        <i class="bi bi-x-circle me-1"></i>Reject
+                                    </button>
+                                </form>
+                            </div>
+                        @elseif($w->status === 'approved')
+                            <span class="text-success small fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Approved</span>
                         @else
-                            <span class="text-muted small"><i class="bi bi-check-circle-fill text-success me-1"></i>Completed</span>
+                            <span class="text-danger small fw-semibold"><i class="bi bi-x-circle-fill me-1"></i>Rejected</span>
                         @endif
                     </td>
                 </tr>

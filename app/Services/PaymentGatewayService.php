@@ -105,6 +105,15 @@ class PaymentGatewayService
                 );
             }
 
+            // Send In-App Notification to User
+            \App\Models\Notification::create([
+                'user_id' => $deposit->user_id,
+                'title' => 'Deposit Approved! 💰',
+                'message' => "Your deposit #{$deposit->transaction_id} for ₹" . number_format($deposit->amount, 2) . " has been approved and credited to your wallet balance.",
+                'type' => 'deposit_approved',
+                'is_read' => false,
+            ]);
+
             return $deposit;
         });
     }

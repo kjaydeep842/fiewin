@@ -329,8 +329,17 @@
                 <i class="bi bi-dice-6-fill text-primary"></i> Dice Roll
             </a>
 
-            <div class="admin-nav-section mt-1">Payments</div>
+            <div class="admin-nav-section mt-1">Payments & Verification</div>
 
+            @php
+                $sidebarPendingBankCount = \App\Models\BankAccount::where('status', 'pending')->count();
+            @endphp
+            <a href="{{ route('admin.bank-approvals.index') }}" class="admin-nav-link {{ request()->routeIs('admin.bank-approvals.*') ? 'active' : '' }}">
+                <i class="bi bi-credit-card-2-front text-warning"></i> Bank Card Approvals
+                @if($sidebarPendingBankCount > 0)
+                    <span class="badge bg-warning text-dark rounded-pill ms-auto" style="font-size: 0.68rem;">{{ $sidebarPendingBankCount }}</span>
+                @endif
+            </a>
             <a href="{{ route('admin.merchants.index') }}" class="admin-nav-link {{ request()->routeIs('admin.merchants.*') ? 'active' : '' }}">
                 <i class="bi bi-bank text-primary"></i> Merchant Accounts
             </a>
@@ -373,6 +382,9 @@
                 <span class="text-muted ms-2 small">@yield('page-subtitle')</span>
             </div>
             <div class="d-flex align-items-center gap-3">
+                <button id="enableDesktopNotifBtn" onclick="requestAdminNotificationPermission()" class="btn btn-sm btn-outline-warning rounded-pill px-3 py-1 fw-bold shadow-sm" style="font-size:0.75rem; display: none;">
+                    <i class="bi bi-bell-fill me-1"></i> Enable Desktop Alerts
+                </button>
                 <span class="badge badge-soft-success px-3 py-2 rounded-pill">
                     <i class="bi bi-circle-fill me-1" style="font-size:0.5rem;"></i> System Operational
                 </span>
@@ -410,7 +422,217 @@
         </div>
     </div>
 
+    <!-- Admin Floating Toast Notifications Container -->
+    <div id="adminToastContainer" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999; max-width: 380px; width: 100%;"></div>
+
+    <!-- Sound Synthesizer Engine -->
+    <script src="{{ asset('js/sound-manager.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        let isInitialAdminPoll = true;
+        const seenAdminAlertIds = new Set(JSON.parse(sessionStorage.getItem('seenAdminAlertIds') || '[]'));
+
+        function requestAdminNotificationPermission() {
+            if ("Notification" in window) {
+                Notification.requestPermission().then(permission => {
+                    updateNotifBtnState();
+                    if (permission === 'granted') {
+                        try {
+                            new Notification("🔔 Admin Desktop Alerts Enabled!", {
+                                body: "You will now receive real-time popups even when Chrome is minimized or in another tab.",
+                                icon: "/favicon.ico"
+                            });
+                        } catch(e) {}
+                    }
+                });
+            }
+        }
+
+        function updateNotifBtnState() {
+            const btn = document.getElementById('enableDesktopNotifBtn');
+            if (!btn) return;
+            if ("Notification" in window) {
+                if (Notification.permission === "granted") {
+                    btn.style.display = "none";
+                } else {
+                    btn.style.display = "inline-flex";
+                }
+            }
+        }
+
+        function saveSeenAlert(id) {
+            seenAdminAlertIds.add(id);
+            if (seenAdminAlertIds.size > 500) {
+                const arr = Array.from(seenAdminAlertIds);
+                seenAdminAlertIds.clear();
+                arr.slice(-300).forEach(i => seenAdminAlertIds.add(i));
+            }
+            try {
+                sessionStorage.setItem('seenAdminAlertIds', JSON.stringify(Array.from(seenAdminAlertIds)));
+            } catch(e) {}
+        }
+
+        function triggerAdminLiveAlert(title, message, iconClass = 'bi-bell-fill text-warning', soundName = 'notification', actionUrl = null) {
+            // 1. Play Sound Engine Chime
+            if (window.soundManager) {
+                window.soundManager.play(soundName);
+            }
+
+            // 2. Trigger Browser Native Desktop OS Notification (Pops up when Chrome is minimized / tab inactive)
+            if ("Notification" in window && Notification.permission === "granted") {
+                try {
+                    const plainMessage = message.replace(/<[^>]*>?/gm, '');
+                    const nativeNotif = new Notification(title, {
+                        body: plainMessage,
+                        icon: '/favicon.ico',
+                        tag: 'admin-alert-' + Date.now(),
+                        renotify: true
+                    });
+
+                    nativeNotif.onclick = function() {
+                        window.focus();
+                        if (actionUrl) {
+                            window.location.href = actionUrl;
+                        }
+                        nativeNotif.close();
+                    };
+                } catch(e) {}
+            }
+
+            // 3. Trigger In-Page Floating Toast Popup
+            showAdminToastAlert(title, message, iconClass, actionUrl);
+        }
+
+        function showAdminToastAlert(title, message, iconClass, actionUrl) {
+            const container = document.getElementById('adminToastContainer');
+            if (!container) return;
+
+            const toastId = 'toast_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+            const actionBtn = actionUrl ? `<a href="${actionUrl}" class="btn btn-sm btn-primary rounded-pill px-3 ms-auto text-white fw-bold shadow-sm" style="font-size:0.75rem;">View Request</a>` : '';
+
+            const toastHtml = `
+                <div id="${toastId}" class="toast align-items-center border-0 shadow-lg mb-2 rounded-4 bg-white show overflow-hidden" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="p-3 border-start border-4 border-primary">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <i class="bi ${iconClass} fs-5"></i>
+                            <strong class="me-auto text-dark" style="font-size: 0.88rem;">${title}</strong>
+                            <small class="text-muted" style="font-size: 0.68rem;">Just now</small>
+                            <button type="button" class="btn-close ms-2" data-bs-dismiss="toast" aria-label="Close"></button>
+                        </div>
+                        <div class="text-secondary mb-2" style="font-size: 0.8rem; line-height: 1.35;">${message}</div>
+                        ${actionBtn ? `<div class="d-flex justify-content-end">${actionBtn}</div>` : ''}
+                    </div>
+                </div>`;
+
+            container.insertAdjacentHTML('beforeend', toastHtml);
+
+            // Auto dismiss after 9 seconds
+            setTimeout(() => {
+                const toastElem = document.getElementById(toastId);
+                if (toastElem) {
+                    toastElem.classList.remove('show');
+                    setTimeout(() => toastElem.remove(), 300);
+                }
+            }, 9000);
+        }
+
+        function pollAdminRealtimeAlerts() {
+            fetch('{{ route("admin.realtime-alerts") }}', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // Suppress alerts on initial page load (mark existing pending items as seen)
+                    if (isInitialAdminPoll) {
+                        if (data.deposits) data.deposits.forEach(d => saveSeenAlert(d.id));
+                        if (data.withdrawals) data.withdrawals.forEach(w => saveSeenAlert(w.id));
+                        if (data.bank_cards) data.bank_cards.forEach(b => saveSeenAlert(b.id));
+                        if (data.new_users) data.new_users.forEach(u => saveSeenAlert(u.id));
+                        isInitialAdminPoll = false;
+                        return;
+                    }
+
+                    // Subsequent polls: Trigger Live Desktop Notification & Sound for NEW events only!
+                    // 1. Pending Deposit Requests (Manual & Online)
+                    if (data.deposits && data.deposits.length > 0) {
+                        data.deposits.forEach(d => {
+                            if (!seenAdminAlertIds.has(d.id)) {
+                                saveSeenAlert(d.id);
+                                triggerAdminLiveAlert(
+                                    '💰 New Deposit Request!',
+                                    `Deposit request of <strong>₹${d.amount}</strong> via ${d.payment_method} submitted by <strong>${d.user_name}</strong>.`,
+                                    'bi-arrow-down-circle-fill text-success',
+                                    'coin',
+                                    '{{ route("admin.deposits.index") }}'
+                                );
+                            }
+                        });
+                    }
+
+                    // 2. Pending Withdrawal Requests
+                    if (data.withdrawals && data.withdrawals.length > 0) {
+                        data.withdrawals.forEach(w => {
+                            if (!seenAdminAlertIds.has(w.id)) {
+                                saveSeenAlert(w.id);
+                                triggerAdminLiveAlert(
+                                    '💸 New Withdrawal Request!',
+                                    `Withdrawal request of <strong>₹${w.amount}</strong> submitted by <strong>${w.user_name}</strong>.`,
+                                    'bi-arrow-up-right-circle-fill text-danger',
+                                    'cashout',
+                                    '{{ route("admin.withdrawals.index") }}'
+                                );
+                            }
+                        });
+                    }
+
+                    // 3. Pending Bank Cards
+                    if (data.bank_cards && data.bank_cards.length > 0) {
+                        data.bank_cards.forEach(b => {
+                            if (!seenAdminAlertIds.has(b.id)) {
+                                saveSeenAlert(b.id);
+                                triggerAdminLiveAlert(
+                                    '🏦 New Bank Account Submitted!',
+                                    `<strong>${b.user_name}</strong> added bank card (${b.bank_name}) pending verification.`,
+                                    'bi-credit-card-2-front-fill text-warning',
+                                    'notification',
+                                    '{{ route("admin.bank-approvals.index") }}'
+                                );
+                            }
+                        });
+                    }
+
+                    // 4. New Registered Users
+                    if (data.new_users && data.new_users.length > 0) {
+                        data.new_users.forEach(u => {
+                            if (!seenAdminAlertIds.has(u.id)) {
+                                saveSeenAlert(u.id);
+                                triggerAdminLiveAlert(
+                                    '👤 New Player Registered!',
+                                    `Player <strong>${u.name}</strong> (${u.mobile}) just signed up on platform.`,
+                                    'bi-person-plus-fill text-info',
+                                    'win',
+                                    '{{ route("admin.users.index") }}'
+                                );
+                            }
+                        });
+                    }
+                }
+            })
+            .catch(err => {});
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateNotifBtnState();
+            if ("Notification" in window && Notification.permission === "default") {
+                Notification.requestPermission().then(() => updateNotifBtnState());
+            }
+
+            pollAdminRealtimeAlerts();
+            setInterval(pollAdminRealtimeAlerts, 4000); // Poll every 4s
+        });
+    </script>
     @stack('scripts')
 </body>
 </html>

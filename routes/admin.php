@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\BankApprovalController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FinancialController;
 use App\Http\Controllers\Admin\GameManagerController;
@@ -9,10 +10,19 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+Route::get('/realtime-alerts', [DashboardController::class, 'realtimeAlerts'])->name('realtime-alerts');
 
 // User Management
 Route::get('/users', [UserController::class, 'index'])->name('users.index');
 Route::post('/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
+Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+Route::post('/users/send-notification', [UserController::class, 'sendNotification'])->name('users.send-notification');
+
+// Bank Approvals Management
+Route::get('/bank-approvals', [BankApprovalController::class, 'index'])->name('bank-approvals.index');
+Route::post('/bank-approvals/{bankAccount}/approve', [BankApprovalController::class, 'approve'])->name('bank-approvals.approve');
+Route::post('/bank-approvals/{bankAccount}/reject', [BankApprovalController::class, 'reject'])->name('bank-approvals.reject');
 
 // Game Management
 Route::get('/games', [GameManagerController::class, 'index'])->name('games.index');
@@ -116,6 +126,7 @@ Route::post('/deposits/{deposit}/approve', [FinancialController::class, 'approve
 
 Route::get('/withdrawals', [FinancialController::class, 'withdrawals'])->name('withdrawals.index');
 Route::post('/withdrawals/{withdrawal}/approve', [FinancialController::class, 'approveWithdrawal'])->name('withdrawals.approve');
+Route::post('/withdrawals/{withdrawal}/reject', [FinancialController::class, 'rejectWithdrawal'])->name('withdrawals.reject');
 
 // Reports
 Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');

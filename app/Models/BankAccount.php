@@ -14,6 +14,8 @@ class BankAccount extends Model
         'ifsc_code',
         'upi_id',
         'is_primary',
+        'status',
+        'admin_notes',
     ];
 
     protected $casts = [

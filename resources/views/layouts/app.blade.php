@@ -429,6 +429,22 @@
                 </button>
 
                 @auth
+                    @php
+                        $unreadBellCount = \App\Models\Notification::where('user_id', auth()->id())->where('is_read', false)->count();
+                    @endphp
+                    {{-- Notification Bell Link --}}
+                    <a href="{{ route('notifications.index') }}"
+                       class="btn btn-sm btn-light border rounded-circle position-relative flex-shrink-0"
+                       title="Notifications Center"
+                       style="width:32px; height:32px; padding:0; display:flex; align-items:center; justify-content:center;">
+                        <i class="bi bi-bell-fill text-warning" style="font-size:0.88rem;"></i>
+                        <span id="topNotifBadge"
+                              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                              style="font-size:0.55rem; padding: 2px 5px; display: {{ $unreadBellCount > 0 ? 'inline-block' : 'none' }};">
+                            {{ $unreadBellCount > 99 ? '99+' : $unreadBellCount }}
+                        </span>
+                    </a>
+
                     {{-- Wallet balance pill --}}
                     <a href="{{ route('wallet.index') }}" class="text-decoration-none gh-wallet-pill">
                         <i class="bi bi-wallet2 text-primary flex-shrink-0" style="font-size:0.9rem;"></i>
@@ -478,6 +494,9 @@
             @endif
 
             @yield('content')
+
+            <!-- Platform Compliance Footer -->
+            @include('partials.footer')
         </main>
 
         <!-- Bottom Navigation Bar -->
@@ -508,6 +527,8 @@
                 <span class="d-inline d-md-none">Profile</span>
             </a>
         </nav>
+        <!-- Player Floating Toast Notifications Container -->
+        <div id="userToastContainer" class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index: 9999; max-width: 440px; width: 92%;"></div>
     </div>
 
     <!-- SoundManager & AnimationManager Engine Scripts -->
@@ -517,6 +538,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
+        let playerLastCheckedAt = null;
+
         function togglePlatformSound() {
             if (window.soundManager) {
                 const muted = window.soundManager.toggleMute();
@@ -535,12 +558,116 @@
             }
         };
 
+        function showUserToastAlert(title, message, iconClass = 'bi-bell-fill text-primary', soundName = 'notification', actionUrl = '{{ route("notifications.index") }}') {
+            const container = document.getElementById('userToastContainer');
+            if (!container) return;
+
+            // Synthesize Audio Chime
+            if (window.soundManager) {
+                window.soundManager.play(soundName);
+            }
+
+            const toastId = 'player_toast_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+
+            const toastHtml = `
+                <div id="${toastId}" class="toast align-items-center border-0 shadow-lg mb-2 rounded-4 bg-white show overflow-hidden" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="p-3 border-start border-4 border-primary">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <i class="bi ${iconClass} fs-5"></i>
+                            <strong class="me-auto text-dark" style="font-size: 0.85rem;">${escapeNotifHtml(title)}</strong>
+                            <small class="text-muted" style="font-size: 0.68rem;">Just now</small>
+                            <button type="button" class="btn-close ms-2" data-bs-dismiss="toast" aria-label="Close"></button>
+                        </div>
+                        <div class="text-secondary mb-2" style="font-size: 0.78rem; line-height: 1.35;">${escapeNotifHtml(message)}</div>
+                        <div class="d-flex justify-content-end">
+                            <a href="${actionUrl}" class="btn btn-xs btn-primary rounded-pill px-3 text-white fw-bold" style="font-size:0.72rem;">View Details</a>
+                        </div>
+                    </div>
+                </div>`;
+
+            container.insertAdjacentHTML('beforeend', toastHtml);
+
+            setTimeout(() => {
+                const toastElem = document.getElementById(toastId);
+                if (toastElem) {
+                    toastElem.classList.remove('show');
+                    setTimeout(() => toastElem.remove(), 300);
+                }
+            }, 8000);
+        }
+
+        function pollPlayerRealtimeAlerts() {
+            if (!window.USER_ID) return;
+            let url = '{{ route("notifications.realtime-check") }}';
+            if (playerLastCheckedAt) {
+                url += '?last_checked_at=' + encodeURIComponent(playerLastCheckedAt);
+            }
+
+            fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // Update Unread Badge
+                    const badge = document.getElementById('topNotifBadge');
+                    if (badge) {
+                        if (data.unread_count > 0) {
+                            badge.innerText = data.unread_count > 99 ? '99+' : data.unread_count;
+                            badge.style.display = 'inline-block';
+                        } else {
+                            badge.style.display = 'none';
+                        }
+                    }
+
+                    if (playerLastCheckedAt && data.new_notifications && data.new_notifications.length > 0) {
+                        data.new_notifications.forEach(n => {
+                            let iconClass = 'bi-bell-fill text-primary';
+                            let soundName = 'notification';
+
+                            if (n.type.includes('deposit')) {
+                                iconClass = 'bi-arrow-down-circle-fill text-success';
+                                soundName = 'coin';
+                            } else if (n.type.includes('withdrawal') && n.type.includes('approved')) {
+                                iconClass = 'bi-check-circle-fill text-success';
+                                soundName = 'cashout';
+                            } else if (n.type.includes('withdrawal') && n.type.includes('rejected')) {
+                                iconClass = 'bi-x-circle-fill text-danger';
+                                soundName = 'lose';
+                            } else if (n.type.includes('bank')) {
+                                iconClass = 'bi-patch-check-fill text-success';
+                                soundName = 'notification';
+                            } else if (n.type.includes('promo') || n.type.includes('offer')) {
+                                iconClass = 'bi-gift-fill text-warning';
+                                soundName = 'win';
+                            }
+
+                            showUserToastAlert(n.title, n.message, iconClass, soundName);
+                        });
+                    }
+
+                    playerLastCheckedAt = data.server_time;
+                }
+            })
+            .catch(err => {});
+        }
+
+        function escapeNotifHtml(text) {
+            if (!text) return '';
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             if (window.soundManager) {
                 const icon = document.getElementById('soundToggleIcon');
                 if (icon && window.soundManager.isMuted) {
                     icon.className = 'bi bi-volume-mute-fill text-secondary';
                 }
+            }
+
+            if (window.USER_ID) {
+                pollPlayerRealtimeAlerts();
+                setInterval(pollPlayerRealtimeAlerts, 5000); // Check every 5s
             }
         });
     </script>

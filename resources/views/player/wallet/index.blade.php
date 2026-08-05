@@ -219,36 +219,58 @@
 
         <!-- Withdraw Tab -->
         <div class="tab-pane fade" id="pillWithdraw">
+            @if($bankAccounts->isEmpty())
+                <div class="alert alert-warning border border-warning border-opacity-25 rounded-3 p-3 mb-3">
+                    <div class="d-flex align-items-center gap-2 mb-1 text-warning-emphasis fw-bold" style="font-size: 0.88rem;">
+                        <i class="bi bi-exclamation-triangle-fill fs-5 text-warning"></i> Bank Account Approval Required
+                    </div>
+                    <p class="mb-2 text-dark small" style="font-size: 0.8rem;">
+                        @if(($allBankAccounts->count() ?? 0) > 0)
+                            Your bank account is currently <strong>PENDING ADMIN VERIFICATION</strong>. You will be able to submit withdrawals as soon as your bank card is approved by Admin.
+                        @else
+                            You have no <strong>APPROVED</strong> bank card linked. Please add your bank details in Profile for admin verification before requesting a withdrawal.
+                        @endif
+                    </p>
+                    <a href="{{ route('profile.index') }}" class="btn btn-sm btn-warning rounded-pill fw-bold text-dark px-3" style="font-size: 0.75rem;">
+                        <i class="bi bi-person-gear me-1"></i> Add / Check Bank Status in Profile
+                    </a>
+                </div>
+            @endif
+
             <form action="{{ route('wallet.withdraw') }}" method="POST">
                 @csrf
                 <div class="mb-3">
                     <label class="form-label text-secondary small fw-bold mb-1">WITHDRAWAL AMOUNT (₹)</label>
                     <div class="input-group mb-1">
                         <span class="input-group-text bg-light fw-bold text-secondary">₹</span>
-                        <input type="number" name="amount" class="form-control form-control-lg fw-bold text-dark" placeholder="Min ₹100" min="100" required>
+                        <input type="number" name="amount" class="form-control form-control-lg fw-bold text-dark" placeholder="Min ₹100" min="100" required {{ $bankAccounts->isEmpty() ? 'disabled' : '' }}>
                     </div>
                     <small class="text-muted" style="font-size: 0.72rem;">Available Balance: ₹{{ number_format($wallet->main_balance, 2) }}</small>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label text-secondary small fw-bold mb-1">SAVED BANK ACCOUNT</label>
-                    <select name="bank_account_id" class="form-select">
+                    <label class="form-label text-secondary small fw-bold mb-1">APPROVED BANK ACCOUNT</label>
+                    <select name="bank_account_id" class="form-select" {{ $bankAccounts->isEmpty() ? 'disabled' : '' }}>
                         @forelse($bankAccounts as $b)
                             <option value="{{ $b->id }}">{{ $b->bank_name }} - {{ $b->account_number }} ({{ $b->account_holder }})</option>
                         @empty
-                            <option value="">No bank account added yet (Add in Profile)</option>
+                            <option value="">No approved bank card available</option>
                         @endforelse
                     </select>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label text-secondary small fw-bold mb-1">OR ENTER UPI ID</label>
-                    <input type="text" name="upi_id" class="form-control" placeholder="username@upi">
+                    <input type="text" name="upi_id" class="form-control" placeholder="username@upi" {{ $bankAccounts->isEmpty() ? 'disabled' : '' }}>
                 </div>
 
-                <button type="submit" class="btn gh-btn-primary w-100 py-3 fs-6 fw-bold rounded-3 shadow">
+                <button type="submit" class="btn gh-btn-primary w-100 py-3 fs-6 fw-bold rounded-3 shadow" {{ $bankAccounts->isEmpty() ? 'disabled' : '' }}>
                     <i class="bi bi-arrow-up-circle-fill me-2"></i>SUBMIT WITHDRAWAL
                 </button>
+
+                <a href="{{ route('wallet.history') }}" class="btn btn-outline-secondary btn-sm w-100 rounded-pill mt-3 py-2 fw-semibold">
+                    <i class="bi bi-clock-history me-1"></i> Track Live Withdrawal Progress & History
+                </a>
             </form>
         </div>
 

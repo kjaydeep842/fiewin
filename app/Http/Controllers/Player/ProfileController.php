@@ -66,8 +66,9 @@ class ProfileController extends Controller
             'ifsc_code' => $request->ifsc_code,
             'upi_id' => $request->upi_id,
             'is_primary' => true,
+            'status' => 'pending',
         ]);
 
-        return back()->with('success', 'Bank account details added successfully!');
+        return back()->with('success', 'Bank account added successfully! Status is PENDING admin verification before withdrawal usage.');
     }
 }

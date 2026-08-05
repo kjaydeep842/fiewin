@@ -35,13 +35,29 @@ class WalletController extends Controller
         $user = auth()->user();
         $wallet = $user->wallet;
         $paymentMethods = PaymentMethod::where('is_active', true)->get();
-        $bankAccounts = BankAccount::where('user_id', $user->id)->get();
+        $allBankAccounts = BankAccount::where('user_id', $user->id)->get();
+        $bankAccounts = BankAccount::where('user_id', $user->id)->where('status', 'approved')->get();
         $deposits = Deposit::where('user_id', $user->id)->latest()->take(10)->get();
         $manualDeposits = DepositRequest::where('user_id', $user->id)->with('merchantAccount')->latest()->take(10)->get();
         $withdrawals = Withdrawal::where('user_id', $user->id)->latest()->take(10)->get();
         $transactions = WalletTransaction::where('wallet_id', $wallet->id)->latest()->take(20)->get();
 
-        return view('player.wallet.index', compact('wallet', 'paymentMethods', 'bankAccounts', 'deposits', 'manualDeposits', 'withdrawals', 'transactions'));
+        return view('player.wallet.index', compact('wallet', 'paymentMethods', 'bankAccounts', 'allBankAccounts', 'deposits', 'manualDeposits', 'withdrawals', 'transactions'));
+    }
+
+    /**
+     * Display User Wallet & Transaction History Dashboard with Withdrawal Tracking
+     */
+    public function history()
+    {
+        $user = auth()->user();
+        $wallet = $user->wallet;
+        $deposits = Deposit::where('user_id', $user->id)->latest()->get();
+        $manualDeposits = DepositRequest::where('user_id', $user->id)->with('merchantAccount')->latest()->get();
+        $withdrawals = Withdrawal::where('user_id', $user->id)->with('bankAccount')->latest()->get();
+        $transactions = WalletTransaction::where('wallet_id', $wallet->id)->latest()->paginate(25);
+
+        return view('player.wallet.history', compact('user', 'wallet', 'deposits', 'manualDeposits', 'withdrawals', 'transactions'));
     }
 
     /**
@@ -157,15 +173,34 @@ class WalletController extends Controller
             'upi_id' => 'nullable|string',
         ]);
 
+        $user = auth()->user();
+
+        // Enforce approved bank card requirement
+        if ($request->filled('bank_account_id')) {
+            $bank = BankAccount::where('id', $request->bank_account_id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if (!$bank || $bank->status !== 'approved') {
+                return back()->with('error', 'Selected Bank Account is pending admin approval or invalid. You can only withdraw to an APPROVED bank card.');
+            }
+        } else {
+            // Check if user has at least one approved bank card
+            $approvedCount = BankAccount::where('user_id', $user->id)->where('status', 'approved')->count();
+            if ($approvedCount === 0) {
+                return back()->with('error', 'No approved bank account linked. Please add your Bank Details in Profile and wait for admin approval before withdrawing.');
+            }
+        }
+
         try {
             $withdrawal = $this->paymentService->requestWithdrawal(
-                auth()->id(),
+                $user->id,
                 $request->amount,
                 $request->bank_account_id,
                 $request->upi_id
             );
 
-            return back()->with('success', "Withdrawal request of Rs {$request->amount} submitted! Tx ID: {$withdrawal->transaction_id}");
+            return back()->with('success', "Withdrawal request of ₹{$request->amount} submitted! Tx ID: {$withdrawal->transaction_id}. Track progress in Wallet History.");
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -179,7 +214,7 @@ class WalletController extends Controller
 
         try {
             $this->walletService->transferCommissionToMain(auth()->id(), $request->amount);
-            return back()->with('success', "Rs {$request->amount} transferred from Commission to Main Wallet!");
+            return back()->with('success', "₹{$request->amount} transferred from Commission to Main Wallet!");
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
         }
