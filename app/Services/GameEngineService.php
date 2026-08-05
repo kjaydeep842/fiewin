@@ -25,9 +25,9 @@ class GameEngineService
     /**
      * Settle Fast Parity Period Game
      */
-    public function settleFastParityPeriod(Game $game, string $periodNumber, ?int $manualOverrideNumber = null): GameResult
+    public function settleFastParityPeriod(Game $game, string $periodNumber, ?int $manualOverrideNumber = null, ?\Carbon\Carbon $settledAt = null): GameResult
     {
-        return DB::transaction(function () use ($game, $periodNumber, $manualOverrideNumber) {
+        return DB::transaction(function () use ($game, $periodNumber, $manualOverrideNumber, $settledAt) {
             $existingResult = GameResult::where('game_id', $game->id)
                 ->where('period_number', $periodNumber)
                 ->first();
@@ -88,6 +88,7 @@ class GameEngineService
             $resultDetails = GameHelper::getParityColorResult($winningNumber);
             $seed = Str::random(16);
             $hash = hash('sha256', $periodNumber . '-' . $winningNumber . '-' . $seed);
+            $timestamp = $settledAt ?? now();
 
             $gameResult = GameResult::updateOrCreate(
                 ['game_id' => $game->id, 'period_number' => $periodNumber],
@@ -97,7 +98,8 @@ class GameEngineService
                     'seed' => $seed,
                     'status' => 'settled',
                     'manual_override' => $isOverride,
-                    'settled_at' => now(),
+                    'settled_at' => $timestamp,
+                    'created_at' => $timestamp,
                 ]
             );
 

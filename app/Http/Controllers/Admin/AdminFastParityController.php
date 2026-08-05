@@ -23,6 +23,20 @@ class AdminFastParityController extends Controller
     {
         $game = Game::where('code', 'fast_parity')->firstOrFail();
 
+        // Ensure auto-settlement of recent 15 periods up to current time (30s interval)
+        $interval = 30;
+        $nowTs = time();
+        $currentPIdx = (int)floor($nowTs / $interval);
+
+        for ($i = 15; $i >= 1; $i--) {
+            $pIdx = $currentPIdx - $i;
+            $pTs = $pIdx * $interval;
+            $dateStr = date('Ymd', $pTs);
+            $pNum = $dateStr . str_pad($pIdx % 10000, 4, '0', STR_PAD_LEFT);
+            $settledAt = \Carbon\Carbon::createFromTimestamp($pTs);
+            $this->gameEngine->settleFastParityPeriod($game, $pNum, null, $settledAt);
+        }
+
         $today = now()->startOfDay();
         $todayBets = GameBet::where('game_id', $game->id)->where('created_at', '>=', $today);
         $todayBetsCount = $todayBets->count();

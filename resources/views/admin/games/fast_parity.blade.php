@@ -191,7 +191,7 @@
                                 <span class="badge bg-light text-muted border">AUTO RTP</span>
                             @endif
                         </td>
-                        <td class="text-secondary small">{{ $r->created_at ? $r->created_at->format('H:i:s, M d') : '' }}</td>
+                        <td class="text-secondary small">{{ $r->settled_at ? $r->settled_at->format('H:i:s, M d') : ($r->created_at ? $r->created_at->format('H:i:s, M d') : '') }}</td>
                     </tr>
                 @empty
                     <tr><td colspan="5" class="text-muted text-center py-4">No period results settled yet.</td></tr>
@@ -200,4 +200,26 @@
         </table>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    // Auto refresh settled periods table every 6 seconds to show live results without manual refresh
+    setInterval(function() {
+        if (!document.hidden) {
+            fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(res => res.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newTable = doc.querySelector('.table-responsive');
+                    const currentTable = document.querySelector('.table-responsive');
+                    if (newTable && currentTable) {
+                        currentTable.innerHTML = newTable.innerHTML;
+                    }
+                })
+                .catch(() => {});
+        }
+    }, 6000);
+</script>
+@endpush
 @endsection
